@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Search, Plus, Trash2, MoreHorizontal, Edit, ChevronLeft, ChevronRight, Eye, LayoutTemplate, ListTree, Type } from 'lucide-react';
+import { Search, Plus, Trash2, MoreHorizontal, Edit, ChevronLeft, ChevronRight, Eye, LayoutTemplate, ListTree, Type, Loader2 } from 'lucide-react';
 import { DeleteConfirmationModal } from '@/components/ui/DeleteConfirmationModal';
 import { useCustomizationStore, CaseField, TestStepTemplate, TestCaseTemplate } from '../store/useCustomizationStore';
 import { AddCaseFieldModal } from './AddCaseFieldModal';
@@ -18,11 +18,16 @@ export function SettingsCustomizations() {
   const { 
     caseFields, addCaseField, updateCaseField, deleteCaseField,
     testStepTemplates, addTestStepTemplate, updateTestStepTemplate, deleteTestStepTemplate,
-    testCaseTemplates, addTestCaseTemplate, updateTestCaseTemplate, deleteTestCaseTemplate
+    testCaseTemplates, addTestCaseTemplate, updateTestCaseTemplate, deleteTestCaseTemplate,
+    isLoading, fetchCustomizations
   } = useCustomizationStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'case-field' | 'test-step-template' | 'test-case-template'>('case-field');
+  
+  useEffect(() => {
+    fetchCustomizations();
+  }, [fetchCustomizations]);
   
   const [selectedCaseFields, setSelectedCaseFields] = useState<string[]>([]);
   const [selectedTestStepTemplates, setSelectedTestStepTemplates] = useState<string[]>([]);
@@ -189,6 +194,14 @@ export function SettingsCustomizations() {
     if (activeTab === 'test-step-template') return selectedTestStepTemplates.length;
     return selectedTestCaseTemplates.length;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col space-y-6">

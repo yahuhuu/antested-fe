@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { mockApi } from '@/api/mockApi';
 
 export interface CaseField {
   id: string;
@@ -36,6 +37,8 @@ export interface TestStepTemplate {
 export interface TestCaseFieldConfig {
   id: string;
   width: number; // 12 for full, 6 for half, 4 for third, 3 for quarter
+  section: number;
+  column: number;
 }
 
 export interface TestCaseTemplate {
@@ -51,110 +54,128 @@ interface CustomizationState {
   caseFields: CaseField[];
   testStepTemplates: TestStepTemplate[];
   testCaseTemplates: TestCaseTemplate[];
+  isLoading: boolean;
   
-  addCaseField: (field: Omit<CaseField, 'id'>) => void;
-  updateCaseField: (id: string, field: Partial<CaseField>) => void;
-  deleteCaseField: (id: string) => void;
+  fetchCustomizations: () => Promise<void>;
 
-  addTestStepTemplate: (template: Omit<TestStepTemplate, 'id'>) => void;
-  updateTestStepTemplate: (id: string, template: Partial<TestStepTemplate>) => void;
-  deleteTestStepTemplate: (id: string) => void;
+  addCaseField: (field: Omit<CaseField, 'id'>) => Promise<void>;
+  updateCaseField: (id: string, field: Partial<CaseField>) => Promise<void>;
+  deleteCaseField: (id: string) => Promise<void>;
 
-  addTestCaseTemplate: (template: Omit<TestCaseTemplate, 'id'>) => void;
-  updateTestCaseTemplate: (id: string, template: Partial<TestCaseTemplate>) => void;
-  deleteTestCaseTemplate: (id: string) => void;
+  addTestStepTemplate: (template: Omit<TestStepTemplate, 'id'>) => Promise<void>;
+  updateTestStepTemplate: (id: string, template: Partial<TestStepTemplate>) => Promise<void>;
+  deleteTestStepTemplate: (id: string) => Promise<void>;
+
+  addTestCaseTemplate: (template: Omit<TestCaseTemplate, 'id'>) => Promise<void>;
+  updateTestCaseTemplate: (id: string, template: Partial<TestCaseTemplate>) => Promise<void>;
+  deleteTestCaseTemplate: (id: string) => Promise<void>;
 }
 
 export const useCustomizationStore = create<CustomizationState>((set) => ({
-  caseFields: [
-    { id: '1', name: 'Test Case Type', description: 'Type of the test case.', type: 'Dropdown', testCaseTemplate: ['1', '2'], options: ['Functional', 'Performance', 'Security'] },
-    { id: '2', name: 'Priority', description: 'Priority of the test case.', type: 'Dropdown', testCaseTemplate: ['1', '2', '3'], options: ['High', 'Medium', 'Low'] },
-    { id: '3', name: 'Assign To', description: 'The user assigned to this test case.', type: 'User', testCaseTemplate: ['1'] },
-    { id: '4', name: 'Preconditions', description: 'Conditions that must be met before the test case can be executed.', type: 'Text', testCaseTemplate: ['1', '2', '3'] },
-    { id: '5', name: 'Is Automated', description: 'Check if this test case is automated.', type: 'Checkbox', testCaseTemplate: ['1'] },
-    { id: '6', name: 'Sprint', description: 'The sprint number associated with this test case.', type: 'String', testCaseTemplate: ['1'] },
-    { id: '7', name: 'Browser', description: 'The browser used for testing.', type: 'Dropdown', testCaseTemplate: ['1'], options: ['Chrome', 'Firefox', 'Safari', 'Edge'] },
-  ],
-  testStepTemplates: [
-    { 
-      id: '1', 
-      name: 'Test Step (Single Step)', 
-      description: 'A simple template with one area for steps and one for expected results.', 
-      testCaseTemplate: ['1'],
-      fields: [
-        { id: 'f1', name: 'Steps', type: 'Text Area' },
-        { id: 'f2', name: 'Expected Results', type: 'Text Area' }
-      ]
-    },
-    { 
-      id: '2', 
-      name: 'Test Step (Multiple Steps)', 
-      description: 'A template for test cases with multiple, distinct steps.', 
-      testCaseTemplate: ['1'],
-      fields: [
-        { 
-          id: 'f3', 
-          name: 'Steps', 
-          type: 'Repeater',
-          subFields: [
-            { id: 'sf1', name: 'Step Description', type: 'Text Area' },
-            { id: 'sf2', name: 'Expected Result', type: 'Text Area' }
-          ]
-        }
-      ]
-    },
-    { 
-      id: '3', 
-      name: 'Behaviour Driven Development', 
-      description: 'A template for writing BDD scenarios using Gherkin syntax (Given, When, Then).', 
-      testCaseTemplate: ['1'],
-      fields: [
-        { id: 'f4', name: 'Scenario', type: 'Text Area' }
-      ]
-    },
-    { 
-      id: '4', 
-      name: 'Exploratory Sessions', 
-      description: 'A template for guiding exploratory testing sessions.', 
-      testCaseTemplate: ['1'],
-      fields: [
-        { id: 'f5', name: 'Session Notes', type: 'Text Area' }
-      ]
-    },
-  ],
-  testCaseTemplates: [
-    { id: '1', name: 'Default Template', description: 'Standard template for UI tests', fields: [{id: 'title', width: 12}, {id: 'directory', width: 6}, {id: '1', width: 6}, {id: '2', width: 6}, {id: '3', width: 6}, {id: '4', width: 12}, {id: '5', width: 6}, {id: '6', width: 6}, {id: '7', width: 6}], testStepTemplateMode: 'dynamic' },
-    { id: '2', name: 'API Template', description: 'Template for backend API tests', fields: [{id: 'title', width: 12}, {id: 'directory', width: 6}, {id: '1', width: 6}, {id: '2', width: 6}, {id: '4', width: 12}], testStepTemplateMode: 'strict', testStepTemplateId: '1' },
-    { id: '3', name: 'Performance Template', description: 'Template for performance tests', fields: [{id: 'title', width: 12}, {id: 'directory', width: 6}, {id: '2', width: 6}, {id: '4', width: 12}], testStepTemplateMode: 'strict', testStepTemplateId: '2' },
-  ],
+  caseFields: [],
+  testStepTemplates: [],
+  testCaseTemplates: [],
+  isLoading: false,
 
-  addCaseField: (field) => set((state) => ({
-    caseFields: [...state.caseFields, { ...field, id: Math.random().toString(36).substring(2, 9) }]
-  })),
-  updateCaseField: (id, field) => set((state) => ({
-    caseFields: state.caseFields.map(f => f.id === id ? { ...f, ...field } : f)
-  })),
-  deleteCaseField: (id) => set((state) => ({
-    caseFields: state.caseFields.filter(f => f.id !== id)
-  })),
+  fetchCustomizations: async () => {
+    set({ isLoading: true });
+    try {
+      const [caseFields, testStepTemplates, testCaseTemplates] = await Promise.all([
+        mockApi.getCaseFields(),
+        mockApi.getTestStepTemplates(),
+        mockApi.getTestCaseTemplates()
+      ]);
+      set({ caseFields, testStepTemplates, testCaseTemplates, isLoading: false });
+    } catch (error) {
+      console.error('Failed to fetch customizations', error);
+      set({ isLoading: false });
+    }
+  },
 
-  addTestStepTemplate: (template) => set((state) => ({
-    testStepTemplates: [...state.testStepTemplates, { ...template, id: Math.random().toString(36).substring(2, 9) }]
-  })),
-  updateTestStepTemplate: (id, template) => set((state) => ({
-    testStepTemplates: state.testStepTemplates.map(t => t.id === id ? { ...t, ...template } : t)
-  })),
-  deleteTestStepTemplate: (id) => set((state) => ({
-    testStepTemplates: state.testStepTemplates.filter(t => t.id !== id)
-  })),
+  addCaseField: async (field) => {
+    try {
+      const newField = await mockApi.addCaseField(field);
+      set((state) => ({ caseFields: [...state.caseFields, newField] }));
+    } catch (error) {
+      console.error('Failed to add case field', error);
+    }
+  },
+  updateCaseField: async (id, field) => {
+    try {
+      const updated = await mockApi.updateCaseField(id, field);
+      set((state) => ({
+        caseFields: state.caseFields.map(f => f.id === id ? updated : f)
+      }));
+    } catch (error) {
+      console.error('Failed to update case field', error);
+    }
+  },
+  deleteCaseField: async (id) => {
+    try {
+      await mockApi.deleteCaseField(id);
+      set((state) => ({
+        caseFields: state.caseFields.filter(f => f.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete case field', error);
+    }
+  },
 
-  addTestCaseTemplate: (template) => set((state) => ({
-    testCaseTemplates: [...state.testCaseTemplates, { ...template, id: Math.random().toString(36).substring(2, 9) }]
-  })),
-  updateTestCaseTemplate: (id, template) => set((state) => ({
-    testCaseTemplates: state.testCaseTemplates.map(t => t.id === id ? { ...t, ...template } : t)
-  })),
-  deleteTestCaseTemplate: (id) => set((state) => ({
-    testCaseTemplates: state.testCaseTemplates.filter(t => t.id !== id)
-  })),
+  addTestStepTemplate: async (template) => {
+    try {
+      const newTemplate = await mockApi.addTestStepTemplate(template);
+      set((state) => ({ testStepTemplates: [...state.testStepTemplates, newTemplate] }));
+    } catch (error) {
+      console.error('Failed to add test step template', error);
+    }
+  },
+  updateTestStepTemplate: async (id, template) => {
+    try {
+      const updated = await mockApi.updateTestStepTemplate(id, template);
+      set((state) => ({
+        testStepTemplates: state.testStepTemplates.map(t => t.id === id ? updated : t)
+      }));
+    } catch (error) {
+      console.error('Failed to update test step template', error);
+    }
+  },
+  deleteTestStepTemplate: async (id) => {
+    try {
+      await mockApi.deleteTestStepTemplate(id);
+      set((state) => ({
+        testStepTemplates: state.testStepTemplates.filter(t => t.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete test step template', error);
+    }
+  },
+
+  addTestCaseTemplate: async (template) => {
+    try {
+      const newTemplate = await mockApi.addTestCaseTemplate(template);
+      set((state) => ({ testCaseTemplates: [...state.testCaseTemplates, newTemplate] }));
+    } catch (error) {
+      console.error('Failed to add test case template', error);
+    }
+  },
+  updateTestCaseTemplate: async (id, template) => {
+    try {
+      const updated = await mockApi.updateTestCaseTemplate(id, template);
+      set((state) => ({
+        testCaseTemplates: state.testCaseTemplates.map(t => t.id === id ? updated : t)
+      }));
+    } catch (error) {
+      console.error('Failed to update test case template', error);
+    }
+  },
+  deleteTestCaseTemplate: async (id) => {
+    try {
+      await mockApi.deleteTestCaseTemplate(id);
+      set((state) => ({
+        testCaseTemplates: state.testCaseTemplates.filter(t => t.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete test case template', error);
+    }
+  },
 }));

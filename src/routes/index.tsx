@@ -4,9 +4,12 @@ import { Dashboard } from '@/features/dashboard/components/Dashboard';
 import { ProjectList } from '@/features/projects/components/ProjectList';
 import { ProjectDetail } from '@/features/projects/components/ProjectDetail';
 import { TestRunExecution } from '@/features/test-runs/components/TestRunExecution';
+import { TestExecutionList } from '@/features/test-runs/components/TestExecutionList';
 import { ProjectDashboard } from '@/features/projects/components/ProjectDashboard';
 import { SettingsProjectList } from '@/features/settings/projects/components/SettingsProjectList';
 import { SettingsUsersList } from '@/features/settings/users/components/SettingsUsersList';
+import { MilestoneList } from '@/features/projects/components/MilestoneList';
+import { DefectList } from '@/features/projects/components/DefectList';
 
 import { SettingsCustomizations } from '@/features/settings/customizations/components/SettingsCustomizations';
 
@@ -75,11 +78,15 @@ const router = createBrowserRouter([
       },
       {
         path: 'projects/:projectId/test-runs',
-        element: <ProjectTestRuns />,
+        element: <TestExecutionList />,
+      },
+      {
+        path: 'projects/:projectId/milestones',
+        element: <MilestoneList />,
       },
       {
         path: 'projects/:projectId/defects',
-        element: <ProjectDefects />,
+        element: <DefectList />,
       },
       {
         path: 'projects/:projectId/reports',

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Trash2, ChevronUp, ChevronDown, Eye, LayoutTemplate } from 'lucide-react';
-import { useCustomizationStore, TestCaseTemplate } from '../store/useCustomizationStore';
+import { Eye, LayoutTemplate, Plus, Trash2 } from 'lucide-react';
+import { useCustomizationStore, TestCaseTemplate, TestCaseFieldConfig } from '../store/useCustomizationStore';
+import { Section, reconstructSections, flattenSections } from '../utils/sectionUtils';
+import { TestCaseTemplateEditor } from './TestCaseTemplateEditor';
 
 interface EditTestCaseTemplateModalProps {
   isOpen: boolean;
@@ -17,44 +19,48 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedFields, setSelectedFields] = useState<string[]>(['title', 'directory']);
+  
+  const [sections, setSections] = useState<Section[]>([]);
+  
   const [testStepTemplateMode, setTestStepTemplateMode] = useState<'dynamic' | 'strict'>('dynamic');
   const [testStepTemplateId, setTestStepTemplateId] = useState<string>('');
   
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
 
+  const [previewTestStepTemplateId, setPreviewTestStepTemplateId] = useState<string>('');
+
   useEffect(() => {
     if (isOpen && initialData) {
       setName(initialData.name);
       setDescription(initialData.description);
-      setSelectedFields(initialData.fields || ['title', 'directory']);
+      
+      // Handle legacy data where fields might be string[]
+      let parsedFields: TestCaseFieldConfig[] = [];
+      if (initialData.fields && initialData.fields.length > 0) {
+        if (typeof initialData.fields[0] === 'string') {
+          parsedFields = (initialData.fields as unknown as string[]).map((id, index) => ({
+            id,
+            width: id === 'title' || id === 'directory' ? 12 : 6,
+            section: index + 1,
+            column: 1
+          }));
+        } else {
+          parsedFields = initialData.fields as TestCaseFieldConfig[];
+        }
+      } else {
+        parsedFields = [
+          { id: 'title', width: 12, section: 1, column: 1 },
+          { id: 'directory', width: 12, section: 2, column: 1 }
+        ];
+      }
+      setSections(reconstructSections(parsedFields));
+      
       setTestStepTemplateMode(initialData.testStepTemplateMode || 'dynamic');
       setTestStepTemplateId(initialData.testStepTemplateId || testStepTemplates[0]?.id || '');
+      setPreviewTestStepTemplateId('');
       setActiveTab('editor');
     }
   }, [isOpen, initialData, testStepTemplates]);
-
-  const handleAddField = (fieldId: string) => {
-    if (!selectedFields.includes(fieldId)) {
-      setSelectedFields([...selectedFields, fieldId]);
-    }
-  };
-
-  const handleRemoveField = (fieldId: string) => {
-    if (fieldId !== 'title' && fieldId !== 'directory') {
-      setSelectedFields(selectedFields.filter(id => id !== fieldId));
-    }
-  };
-
-  const handleMoveField = (index: number, direction: 'up' | 'down') => {
-    const newFields = [...selectedFields];
-    if (direction === 'up' && index > 0) {
-      [newFields[index - 1], newFields[index]] = [newFields[index], newFields[index - 1]];
-    } else if (direction === 'down' && index < newFields.length - 1) {
-      [newFields[index + 1], newFields[index]] = [newFields[index], newFields[index + 1]];
-    }
-    setSelectedFields(newFields);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +68,7 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
       onEdit(initialData.id, {
         name,
         description,
-        fields: selectedFields,
+        fields: flattenSections(sections),
         testStepTemplateMode,
         testStepTemplateId: testStepTemplateMode === 'strict' ? testStepTemplateId : undefined
       });
@@ -70,61 +76,176 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
     onClose();
   };
 
-  const availableFields = caseFields.filter(f => !selectedFields.includes(f.id));
+  const renderTestStepFields = (templateId: string) => {
+    const template = testStepTemplates.find(t => t.id === templateId);
+    if (!template) return null;
+    
+    return (
+      <div className="space-y-4 mt-4 p-4 border border-border rounded-lg bg-background/50">
+        {template.fields.map(field => {
+          if (field.type === 'Repeater' && field.subFields) {
+            return (
+              <div key={field.id} className="space-y-2">
+                <label className="block text-sm font-medium text-text mb-1">{field.name}</label>
+                <div className="border border-border rounded-md overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-surface border-b border-border text-text-muted">
+                      <tr>
+                        <th className="px-4 py-2 font-medium w-12">#</th>
+                        {field.subFields.map(subField => (
+                          <th key={subField.id} className="px-4 py-2 font-medium">{subField.name}</th>
+                        ))}
+                        <th className="px-4 py-2 font-medium w-16"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      <tr className="bg-background">
+                        <td className="px-4 py-3 text-text-muted">1</td>
+                        {field.subFields.map(subField => (
+                          <td key={subField.id} className="px-4 py-3">
+                            <textarea 
+                              className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[60px]" 
+                              placeholder={`Enter ${subField.name}`} 
+                            />
+                          </td>
+                        ))}
+                        <td className="px-4 py-3 text-center">
+                          <Button variant="ghost" size="sm" className="text-text-muted hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Plus className="w-4 h-4 mr-2" /> Add Step
+                </Button>
+              </div>
+            );
+          }
+
+          return (
+            <div key={field.id}>
+              <label className="block text-sm font-medium text-text mb-1">{field.name}</label>
+              {field.type === 'Text Area' ? (
+                <textarea className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[80px]" placeholder={`Enter ${field.name}`} />
+              ) : field.type === 'Checkbox' ? (
+                <div className="flex items-center gap-2 h-9">
+                  <input type="checkbox" className="rounded border-border text-primary bg-background" />
+                  <span className="text-sm text-text">Check to enable</span>
+                </div>
+              ) : field.type === 'Dropdown' ? (
+                <select className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm">
+                  <option>Select option...</option>
+                </select>
+              ) : (
+                <Input placeholder={`Enter ${field.name}`} className="bg-background" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderPreview = () => {
     return (
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto pb-8">
         <div className="bg-surface border border-border rounded-lg p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-text mb-4 border-b border-border pb-2">Test Case Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {selectedFields.map((fieldId) => {
-              const isBuiltIn = fieldId === 'title' || fieldId === 'directory';
-              const field = isBuiltIn 
-                ? { id: fieldId, name: fieldId.charAt(0).toUpperCase() + fieldId.slice(1), type: 'string' }
-                : caseFields.find(f => f.id === fieldId);
-              
-              if (!field) return null;
+          <div className="space-y-4">
+            {sections.map(section => (
+              <div key={section.id} className="grid gap-6" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }}>
+                {section.fields.map((fieldId, index) => {
+                  if (!fieldId) {
+                    return <div key={index} className="min-h-[80px]" />; // Empty space for null fields
+                  }
 
-              return (
-                <div key={fieldId} className={isBuiltIn ? "col-span-1 md:col-span-2" : "col-span-1"}>
-                  <label className="block text-sm font-medium text-text mb-1">{field.name}</label>
-                  {field.type === 'text' ? (
-                    <textarea className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[80px]" readOnly placeholder={`Enter ${field.name}`} />
-                  ) : field.type === 'checkbox' ? (
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded border-border text-primary bg-background" readOnly />
-                      <span className="text-sm text-text">Check to enable</span>
+                  if (fieldId === 'directory') {
+                    return (
+                      <div key={`${section.id}-${index}`}>
+                        <label className="block text-sm font-medium text-text mb-1">Directory</label>
+                        <select className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm">
+                          <option value="">Select directory...</option>
+                          <option value="root">Root</option>
+                          <option value="login">Authentication / Login</option>
+                          <option value="checkout">E-commerce / Checkout</option>
+                        </select>
+                      </div>
+                    );
+                  }
+
+                  const isBuiltIn = fieldId === 'title';
+                  const field = isBuiltIn 
+                    ? { id: fieldId, name: fieldId.charAt(0).toUpperCase() + fieldId.slice(1), type: 'string' }
+                    : caseFields.find(f => f.id === fieldId);
+                  
+                  if (!field) return <div key={index} className="min-h-[80px]" />;
+
+                  return (
+                    <div key={`${section.id}-${index}`}>
+                      <label className="block text-sm font-medium text-text mb-1">{field.name}</label>
+                      {field.type === 'text' ? (
+                        <textarea className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[80px]" placeholder={`Enter ${field.name}`} />
+                      ) : field.type === 'checkbox' ? (
+                        <div className="flex items-center gap-2 h-9">
+                          <input type="checkbox" className="rounded border-border text-primary bg-background" />
+                          <span className="text-sm text-text">Check to enable</span>
+                        </div>
+                      ) : field.type === 'dropdown' ? (
+                        <select className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm">
+                          <option>Select option...</option>
+                        </select>
+                      ) : field.type === 'radio' ? (
+                        <div className="flex gap-4 h-9 items-center">
+                          <label className="flex items-center gap-2"><input type="radio" name={`radio-${field.id}`} /> Option 1</label>
+                          <label className="flex items-center gap-2"><input type="radio" name={`radio-${field.id}`} /> Option 2</label>
+                        </div>
+                      ) : (
+                        <Input placeholder={`Enter ${field.name}`} className="bg-background" />
+                      )}
                     </div>
-                  ) : field.type === 'dropdown' ? (
-                    <select className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm" disabled>
-                      <option>Select option...</option>
-                    </select>
-                  ) : field.type === 'radio' ? (
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2"><input type="radio" disabled /> Option 1</label>
-                      <label className="flex items-center gap-2"><input type="radio" disabled /> Option 2</label>
-                    </div>
-                  ) : (
-                    <Input placeholder={`Enter ${field.name}`} readOnly className="bg-background" />
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="bg-surface border border-border rounded-lg p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-text mb-4 border-b border-border pb-2">Test Steps</h3>
           {testStepTemplateMode === 'dynamic' ? (
-            <div className="p-8 border-2 border-dashed border-border rounded-lg text-center bg-background/50">
-              <p className="text-text-muted">User will select a Test Step Template when creating a Test Case.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Test Step Template</label>
+                <select 
+                  className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm"
+                  value={previewTestStepTemplateId}
+                  onChange={(e) => setPreviewTestStepTemplateId(e.target.value)}
+                >
+                  <option value="">Select a template...</option>
+                  {testStepTemplates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              {previewTestStepTemplateId && renderTestStepFields(previewTestStepTemplateId)}
             </div>
           ) : (
-            <div className="p-8 border-2 border-dashed border-border rounded-lg text-center bg-background/50">
-              <p className="text-text-muted">
-                Using fixed template: <span className="font-medium text-text">{testStepTemplates.find(t => t.id === testStepTemplateId)?.name || 'None selected'}</span>
-              </p>
+            <div className="space-y-4">
+              {(() => {
+                const template = testStepTemplates.find(t => t.id === testStepTemplateId);
+                if (!template) {
+                  return (
+                    <div className="p-8 border-2 border-dashed border-border rounded-lg text-center bg-background/50">
+                      <p className="text-text-muted">No template selected.</p>
+                    </div>
+                  );
+                }
+                
+                return renderTestStepFields(testStepTemplateId);
+              })()}
             </div>
           )}
         </div>
@@ -137,7 +258,7 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
       isOpen={isOpen} 
       onClose={onClose} 
       title="Edit Test Case Template" 
-      className="max-w-4xl"
+      className="max-w-5xl w-full h-[90vh]"
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose} className="text-text">
@@ -149,28 +270,27 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
         </div>
       }
     >
-      <div className="flex flex-col h-[calc(100vh-200px)]">
-        {/* Tabs */}
-        <div className="flex border-b border-border mb-6 shrink-0">
-          <button 
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'editor' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
-            onClick={() => setActiveTab('editor')}
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            Editor
-          </button>
-          <button 
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'preview' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
-            onClick={() => setActiveTab('preview')}
-          >
-            <Eye className="h-4 w-4" />
-            Preview
-          </button>
-        </div>
+      {/* Tabs - Fixed at top */}
+      <div className="flex border-b border-border shrink-0 bg-surface sticky -top-4 z-10 -mx-6 px-6 pt-4 mb-6">
+        <button 
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'editor' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          onClick={() => setActiveTab('editor')}
+        >
+          <LayoutTemplate className="h-4 w-4" />
+          Editor
+        </button>
+        <button 
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'preview' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          onClick={() => setActiveTab('preview')}
+        >
+          <Eye className="h-4 w-4" />
+          Preview
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-          {activeTab === 'editor' ? (
-            <form id="edit-test-case-template-form" onSubmit={handleSubmit} className="space-y-8">
+      <div>
+        {activeTab === 'editor' ? (
+          <form id="edit-test-case-template-form" onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -198,73 +318,7 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
 
               {/* Test Case Details Configuration */}
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-base font-medium text-text">Test Case Details Configuration</h3>
-                  <p className="text-sm text-text-muted">Add and arrange fields to customize the layout of the test case details section.</p>
-                </div>
-                
-                <div className="flex gap-3">
-                  <select 
-                    className="flex-1 h-10 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text shadow-sm focus:ring-1 focus:ring-primary outline-none"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        handleAddField(e.target.value);
-                        e.target.value = ''; // Reset select
-                      }
-                    }}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>+ Add Field</option>
-                    {availableFields.map(f => (
-                      <option key={f.id} value={f.id}>{f.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  {selectedFields.map((fieldId, index) => {
-                    const isBuiltIn = fieldId === 'title' || fieldId === 'directory';
-                    const field = isBuiltIn 
-                      ? { id: fieldId, name: fieldId.charAt(0).toUpperCase() + fieldId.slice(1) + ' (Built-in)', type: 'Built-in' }
-                      : caseFields.find(f => f.id === fieldId);
-                    
-                    if (!field) return null;
-
-                    return (
-                      <div key={fieldId} className="flex items-center justify-between bg-surface border border-border rounded-md p-3">
-                        <span className="text-sm font-medium text-text">{field.name}</span>
-                        <div className="flex items-center gap-1">
-                          <button 
-                            type="button"
-                            onClick={() => handleMoveField(index, 'up')}
-                            disabled={index === 0}
-                            className="p-1 text-text-muted hover:text-text hover:bg-background rounded disabled:opacity-50"
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleMoveField(index, 'down')}
-                            disabled={index === selectedFields.length - 1}
-                            className="p-1 text-text-muted hover:text-text hover:bg-background rounded disabled:opacity-50"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleRemoveField(fieldId)}
-                            disabled={isBuiltIn}
-                            className="p-1 text-text-muted hover:text-red-500 rounded ml-2 disabled:opacity-50 flex items-center gap-1"
-                            title={isBuiltIn ? "Built-in fields cannot be removed" : "Remove field"}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            {!isBuiltIn && <span className="text-xs">icon delete</span>}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <TestCaseTemplateEditor sections={sections} onChange={setSections} />
               </div>
 
               {/* Test Step Details Configuration */}
@@ -317,7 +371,6 @@ export function EditTestCaseTemplateModal({ isOpen, onClose, onEdit, initialData
           ) : (
             renderPreview()
           )}
-        </div>
       </div>
     </Modal>
   );

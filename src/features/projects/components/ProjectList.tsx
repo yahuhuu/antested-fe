@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Plus, FolderKanban, Edit2, Trash2 } from 'lucide-react';
+import { Plus, FolderKanban, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { useProjectStore, Project } from '../store/useProjectStore';
 import { ProjectModal } from './ProjectModal';
 import { DeleteConfirmationModal } from '@/components/ui/DeleteConfirmationModal';
 
 export function ProjectList() {
-  const { projects, deleteProject } = useProjectStore();
+  const { projects, isLoading, fetchProjects, deleteProject } = useProjectStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
   const handleOpenModal = (project?: Project) => {
     setEditingProject(project);
     setIsModalOpen(true);
@@ -39,6 +43,14 @@ export function ProjectList() {
     setProjectToDelete(null);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -62,7 +74,7 @@ export function ProjectList() {
                     {project.name}
                   </Link>
                 </CardTitle>
-                <CardDescription className="text-xs font-mono truncate">{project.id}</CardDescription>
+                <CardDescription className="text-xs font-mono truncate">{project.key || project.id}</CardDescription>
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={(e) => { e.preventDefault(); handleOpenModal(project); }}>
@@ -78,16 +90,16 @@ export function ProjectList() {
               <div className="flex items-center gap-4 text-xs text-text-muted shrink-0 mt-auto">
                 <div className="flex items-center gap-1">
                   <FolderKanban className="h-3.5 w-3.5" />
-                  {project.testCases || 0} Cases
+                  {project.test_cases?.total_test_cases || 0} Cases
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="relative flex h-2 w-2">
-                    {(project.activeRuns || 0) > 0 && (
+                    {(project.test_runs?.status?.open || 0) > 0 && (
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     )}
-                    <span className={`relative inline-flex h-2 w-2 rounded-full ${(project.activeRuns || 0) > 0 ? 'bg-emerald-500' : 'bg-surface-hover'}`}></span>
+                    <span className={`relative inline-flex h-2 w-2 rounded-full ${(project.test_runs?.status?.open || 0) > 0 ? 'bg-emerald-500' : 'bg-surface-hover'}`}></span>
                   </span>
-                  {project.activeRuns || 0} Active Runs
+                  {project.test_runs?.status?.open || 0} Active Runs
                 </div>
               </div>
             </CardContent>

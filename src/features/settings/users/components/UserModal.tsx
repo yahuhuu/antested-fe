@@ -94,7 +94,6 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
         status: 'Active',
         groups: formData.selectedGroups.length,
         projects: formData.selectedProjects.length,
-        lastActive: 'Just now',
       });
     }
     onClose();

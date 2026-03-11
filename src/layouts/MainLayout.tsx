@@ -46,7 +46,7 @@ export function MainLayout() {
         {/* Scrollable Content */}
         <div className="flex-1 relative min-h-0 flex flex-col">
           <main className="flex-1 overflow-y-auto custom-scrollbar pr-2" id="main-content">
-            <div className="h-full pb-8 pt-4">
+            <div className="h-full">
               <Outlet />
             </div>
           </main>

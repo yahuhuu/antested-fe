@@ -1,37 +1,91 @@
-import { useState } from 'react';
-import { useUserStore, User } from '@/features/settings/users/store/useUserStore';
-import { useGroupStore, Group } from '@/features/settings/users/store/useGroupStore';
-import { useRoleStore, Role } from '@/features/settings/users/store/useRoleStore';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
-import { Search, Plus, Trash2, MoreHorizontal, Edit, ChevronLeft, ChevronRight, User as UserIcon, Users, Lock, Power, PowerOff, Eye } from 'lucide-react';
-import { DeleteConfirmationModal } from '@/components/ui/DeleteConfirmationModal';
-import { UserModal } from '@/features/settings/users/components/UserModal';
-import { GroupModal } from '@/features/settings/users/components/GroupModal';
-import { RoleModal } from '@/features/settings/users/components/RoleModal';
-import { UserSidePanel } from '@/features/settings/users/components/UserSidePanel';
+import { useState, useEffect } from "react";
+import {
+  useUserStore,
+  User,
+} from "@/features/settings/users/store/useUserStore";
+import {
+  useGroupStore,
+  Group,
+} from "@/features/settings/users/store/useGroupStore";
+import {
+  useRoleStore,
+  Role,
+} from "@/features/settings/users/store/useRoleStore";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import {
+  Search,
+  Plus,
+  Trash2,
+  MoreHorizontal,
+  Edit,
+  ChevronLeft,
+  ChevronRight,
+  User as UserIcon,
+  Users,
+  Lock,
+  Power,
+  PowerOff,
+  Eye,
+  Loader2,
+} from "lucide-react";
+import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal";
+import { UserModal } from "@/features/settings/users/components/UserModal";
+import { GroupModal } from "@/features/settings/users/components/GroupModal";
+import { RoleModal } from "@/features/settings/users/components/RoleModal";
+import { UserSidePanel } from "@/features/settings/users/components/UserSidePanel";
+import { GroupSidePanel } from "@/features/settings/users/components/GroupSidePanel";
+import { RoleSidePanel } from "@/features/settings/users/components/RoleSidePanel";
 
 export function SettingsUsersList() {
-  const { users, deleteUser, toggleUserStatus } = useUserStore();
-  const { groups, deleteGroup } = useGroupStore();
-  const { roles, deleteRole } = useRoleStore();
-  
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    users,
+    isLoading: isLoadingUsers,
+    fetchUsers,
+    deleteUser,
+    toggleUserStatus,
+  } = useUserStore();
+  const {
+    groups,
+    isLoading: isLoadingGroups,
+    fetchGroups,
+    deleteGroup,
+  } = useGroupStore();
+  const {
+    roles,
+    isLoading: isLoadingRoles,
+    fetchRoles,
+    deleteRole,
+  } = useRoleStore();
+
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'groups' | 'roles'>('users');
-  
+  const [activeTab, setActiveTab] = useState<"users" | "groups" | "roles">(
+    "users",
+  );
+
+  useEffect(() => {
+    fetchUsers();
+    fetchGroups();
+    fetchRoles();
+  }, [fetchUsers, fetchGroups, fetchRoles]);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<User | Group | Role | null>(null);
-  const [deleteType, setDeleteType] = useState<'user' | 'group' | 'role'>('user');
+  const [itemToDelete, setItemToDelete] = useState<User | Group | Role | null>(
+    null,
+  );
+  const [deleteType, setDeleteType] = useState<"user" | "group" | "role">(
+    "user",
+  );
 
   // User modal state
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -41,50 +95,69 @@ export function SettingsUsersList() {
   // Group modal state
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>();
+  const [viewingGroup, setViewingGroup] = useState<Group | null>(null);
 
   // Role modal state
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | undefined>();
+  const [viewingRole, setViewingRole] = useState<Role | null>(null);
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const filteredGroups = groups.filter(g => 
-    g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    g.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredGroups = groups.filter(
+    (g) =>
+      g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const filteredRoles = roles.filter(r => 
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRoles = roles.filter(
+    (r) =>
+      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const currentDataLength = activeTab === 'users' ? filteredUsers.length : activeTab === 'groups' ? filteredGroups.length : filteredRoles.length;
+  const currentDataLength =
+    activeTab === "users"
+      ? filteredUsers.length
+      : activeTab === "groups"
+        ? filteredGroups.length
+        : filteredRoles.length;
   const totalPages = Math.ceil(currentDataLength / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + rowsPerPage);
-  const paginatedGroups = filteredGroups.slice(startIndex, startIndex + rowsPerPage);
-  const paginatedRoles = filteredRoles.slice(startIndex, startIndex + rowsPerPage);
+
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + rowsPerPage,
+  );
+  const paginatedGroups = filteredGroups.slice(
+    startIndex,
+    startIndex + rowsPerPage,
+  );
+  const paginatedRoles = filteredRoles.slice(
+    startIndex,
+    startIndex + rowsPerPage,
+  );
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (activeTab === 'users') {
+    if (activeTab === "users") {
       if (e.target.checked) {
-        setSelectedUsers(paginatedUsers.map(u => u.id));
+        setSelectedUsers(paginatedUsers.map((u) => u.id));
       } else {
         setSelectedUsers([]);
       }
-    } else if (activeTab === 'groups') {
+    } else if (activeTab === "groups") {
       if (e.target.checked) {
-        setSelectedGroups(paginatedGroups.map(g => g.id));
+        setSelectedGroups(paginatedGroups.map((g) => g.id));
       } else {
         setSelectedGroups([]);
       }
-    } else if (activeTab === 'roles') {
+    } else if (activeTab === "roles") {
       if (e.target.checked) {
-        setSelectedRoles(paginatedRoles.map(r => r.id));
+        setSelectedRoles(paginatedRoles.map((r) => r.id));
       } else {
         setSelectedRoles([]);
       }
@@ -92,21 +165,21 @@ export function SettingsUsersList() {
   };
 
   const handleSelectItem = (id: string) => {
-    if (activeTab === 'users') {
+    if (activeTab === "users") {
       if (selectedUsers.includes(id)) {
-        setSelectedUsers(selectedUsers.filter(itemId => itemId !== id));
+        setSelectedUsers(selectedUsers.filter((itemId) => itemId !== id));
       } else {
         setSelectedUsers([...selectedUsers, id]);
       }
-    } else if (activeTab === 'groups') {
+    } else if (activeTab === "groups") {
       if (selectedGroups.includes(id)) {
-        setSelectedGroups(selectedGroups.filter(itemId => itemId !== id));
+        setSelectedGroups(selectedGroups.filter((itemId) => itemId !== id));
       } else {
         setSelectedGroups([...selectedGroups, id]);
       }
-    } else if (activeTab === 'roles') {
+    } else if (activeTab === "roles") {
       if (selectedRoles.includes(id)) {
-        setSelectedRoles(selectedRoles.filter(itemId => itemId !== id));
+        setSelectedRoles(selectedRoles.filter((itemId) => itemId !== id));
       } else {
         setSelectedRoles([...selectedRoles, id]);
       }
@@ -115,11 +188,20 @@ export function SettingsUsersList() {
 
   const handleDeleteSelectedClick = () => {
     setItemToDelete(null);
-    setDeleteType(activeTab === 'users' ? 'user' : activeTab === 'groups' ? 'group' : 'role');
+    setDeleteType(
+      activeTab === "users"
+        ? "user"
+        : activeTab === "groups"
+          ? "group"
+          : "role",
+    );
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteSingleClick = (item: User | Group | Role, type: 'user' | 'group' | 'role') => {
+  const handleDeleteSingleClick = (
+    item: User | Group | Role,
+    type: "user" | "group" | "role",
+  ) => {
     setItemToDelete(item);
     setDeleteType(type);
     setIsDeleteModalOpen(true);
@@ -127,43 +209,46 @@ export function SettingsUsersList() {
   };
 
   const handleConfirmDelete = () => {
-    if (deleteType === 'user') {
+    if (deleteType === "user") {
       if (itemToDelete) {
         deleteUser(itemToDelete.id);
-        setSelectedUsers(selectedUsers.filter(id => id !== itemToDelete.id));
+        setSelectedUsers(selectedUsers.filter((id) => id !== itemToDelete.id));
       } else {
-        selectedUsers.forEach(id => deleteUser(id));
+        selectedUsers.forEach((id) => deleteUser(id));
         setSelectedUsers([]);
       }
-    } else if (deleteType === 'group') {
+    } else if (deleteType === "group") {
       if (itemToDelete) {
         deleteGroup(itemToDelete.id);
-        setSelectedGroups(selectedGroups.filter(id => id !== itemToDelete.id));
+        setSelectedGroups(
+          selectedGroups.filter((id) => id !== itemToDelete.id),
+        );
       } else {
-        selectedGroups.forEach(id => deleteGroup(id));
+        selectedGroups.forEach((id) => deleteGroup(id));
         setSelectedGroups([]);
       }
-    } else if (deleteType === 'role') {
+    } else if (deleteType === "role") {
       if (itemToDelete) {
         deleteRole(itemToDelete.id);
-        setSelectedRoles(selectedRoles.filter(id => id !== itemToDelete.id));
+        setSelectedRoles(selectedRoles.filter((id) => id !== itemToDelete.id));
       } else {
-        selectedRoles.forEach(id => deleteRole(id));
+        selectedRoles.forEach((id) => deleteRole(id));
         setSelectedRoles([]);
       }
     }
-    
+
     // Adjust pagination if needed
-    const remainingItems = activeTab === 'users' 
-      ? filteredUsers.length - (itemToDelete ? 1 : selectedUsers.length)
-      : activeTab === 'groups'
-      ? filteredGroups.length - (itemToDelete ? 1 : selectedGroups.length)
-      : filteredRoles.length - (itemToDelete ? 1 : selectedRoles.length);
-      
+    const remainingItems =
+      activeTab === "users"
+        ? filteredUsers.length - (itemToDelete ? 1 : selectedUsers.length)
+        : activeTab === "groups"
+          ? filteredGroups.length - (itemToDelete ? 1 : selectedGroups.length)
+          : filteredRoles.length - (itemToDelete ? 1 : selectedRoles.length);
+
     if (currentPage > Math.ceil(remainingItems / rowsPerPage)) {
       setCurrentPage(Math.max(1, Math.ceil(remainingItems / rowsPerPage)));
     }
-    
+
     setIsDeleteModalOpen(false);
     setItemToDelete(null);
   };
@@ -211,44 +296,54 @@ export function SettingsUsersList() {
     setActiveDropdown(null);
   };
 
+  if (isLoadingUsers || isLoadingGroups || isLoadingRoles) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col space-y-6">
       <div className="flex items-center justify-between shrink-0">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Users & Roles</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-text">
+          Users & Roles
+        </h1>
       </div>
 
       <div className="flex border-b border-border shrink-0">
-        <button 
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'users' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
-          onClick={() => setActiveTab('users')}
+        <button
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "users" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text"}`}
+          onClick={() => setActiveTab("users")}
         >
           <UserIcon className="h-4 w-4" />
           Users
         </button>
-        <button 
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'groups' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
-          onClick={() => setActiveTab('groups')}
+        <button
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "groups" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text"}`}
+          onClick={() => setActiveTab("groups")}
         >
           <Users className="h-4 w-4" />
           Groups
         </button>
-        <button 
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'roles' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
-          onClick={() => setActiveTab('roles')}
+        <button
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "roles" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text"}`}
+          onClick={() => setActiveTab("roles")}
         >
           <Lock className="h-4 w-4" />
           Roles
         </button>
       </div>
 
-      {activeTab === 'users' && (
+      {activeTab === "users" && (
         <>
           <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
               <div className="relative w-72">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-text-muted" />
-                <Input 
-                  placeholder="Search name or email..." 
+                <Input
+                  placeholder="Search name or email..."
                   className="pl-8 bg-surface border-border"
                   value={searchQuery}
                   onChange={(e) => {
@@ -265,12 +360,18 @@ export function SettingsUsersList() {
             </div>
             <div className="flex items-center gap-2">
               {selectedUsers.length > 0 && (
-                <Button variant="destructive" onClick={handleDeleteSelectedClick}>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteSelectedClick}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete ({selectedUsers.length})
                 </Button>
               )}
-              <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-hover text-white">
+              <Button
+                onClick={handleAddUser}
+                className="bg-primary hover:bg-primary-hover text-white"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add User
               </Button>
@@ -284,10 +385,13 @@ export function SettingsUsersList() {
                   <tr>
                     <th className="px-4 py-3 w-12">
                       <div className="flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           className="rounded border-white/30 text-primary focus:ring-white bg-white/10"
-                          checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+                          checked={
+                            selectedUsers.length === paginatedUsers.length &&
+                            paginatedUsers.length > 0
+                          }
                           onChange={handleSelectAll}
                         />
                       </div>
@@ -304,17 +408,23 @@ export function SettingsUsersList() {
                 <tbody className="divide-y divide-border bg-surface">
                   {paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
+                      <td
+                        colSpan={8}
+                        className="px-4 py-8 text-center text-text-muted"
+                      >
                         No users found.
                       </td>
                     </tr>
                   ) : (
                     paginatedUsers.map((user) => (
-                      <tr key={user.id} className="group hover:bg-surface-hover transition-colors">
+                      <tr
+                        key={user.id}
+                        className="group hover:bg-surface-hover transition-colors"
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               className="rounded border-border text-primary focus:ring-primary bg-background"
                               checked={selectedUsers.includes(user.id)}
                               onChange={() => handleSelectItem(user.id)}
@@ -323,18 +433,30 @@ export function SettingsUsersList() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                            <img
+                              src={user.avatar}
+                              alt={user.name}
+                              className="h-8 w-8 rounded-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
                             <div className="flex flex-col">
-                              <span className="font-medium text-text">{user.name}</span>
-                              <span className="text-xs text-text-muted">{user.email}</span>
+                              <span className="font-medium text-text">
+                                {user.name}
+                              </span>
+                              <span className="text-xs text-text-muted">
+                                {user.email}
+                              </span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-text">
-                          {user.role}
-                        </td>
+                        <td className="px-4 py-3 text-text">{user.role}</td>
                         <td className="px-4 py-3">
-                          <Badge variant={user.status === 'Active' ? 'success' : 'secondary'} className="text-[10px] px-2 py-0.5">
+                          <Badge
+                            variant={
+                              user.status === "Active" ? "success" : "secondary"
+                            }
+                            className="text-[10px] px-2 py-0.5"
+                          >
                             {user.status}
                           </Badge>
                         </td>
@@ -348,39 +470,43 @@ export function SettingsUsersList() {
                           {user.lastActive}
                         </td>
                         <td className="px-4 py-3 text-center relative">
-                          <button 
-                            onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)}
+                          <button
+                            onClick={() =>
+                              setActiveDropdown(
+                                activeDropdown === user.id ? null : user.id,
+                              )
+                            }
                             className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
-                          
+
                           {activeDropdown === user.id && (
                             <>
-                              <div 
-                                className="fixed inset-0 z-40" 
+                              <div
+                                className="fixed inset-0 z-40"
                                 onClick={() => setActiveDropdown(null)}
                               />
                               <div className="absolute right-8 top-8 z-50 w-36 rounded-md border border-border bg-surface shadow-lg py-1">
-                                <button 
+                                <button
                                   onClick={() => handleViewUser(user)}
                                   className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
                                 >
                                   <Eye className="mr-2 h-4 w-4" />
                                   View User
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleEditUser(user)}
                                   className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleToggleStatus(user.id)}
                                   className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
                                 >
-                                  {user.status === 'Active' ? (
+                                  {user.status === "Active" ? (
                                     <>
                                       <PowerOff className="mr-2 h-4 w-4" />
                                       Deactivate
@@ -392,8 +518,10 @@ export function SettingsUsersList() {
                                     </>
                                   )}
                                 </button>
-                                <button 
-                                  onClick={() => handleDeleteSingleClick(user, 'user')}
+                                <button
+                                  onClick={() =>
+                                    handleDeleteSingleClick(user, "user")
+                                  }
                                   className="flex w-full items-center px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -409,18 +537,20 @@ export function SettingsUsersList() {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Pagination */}
             <div className="shrink-0 flex items-center justify-between border-t border-border bg-surface-hover px-4 py-3 sm:px-6">
               <div className="hidden sm:block">
                 <p className="text-xs text-text">
-                  {filteredUsers.length === 0 ? '0 items' : `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredUsers.length)} of ${filteredUsers.length} items`}
+                  {filteredUsers.length === 0
+                    ? "0 items"
+                    : `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredUsers.length)} of ${filteredUsers.length} items`}
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs text-text">
                 <div className="flex items-center gap-2">
                   <span>Rows per page:</span>
-                  <select 
+                  <select
                     className="rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-text"
                     value={rowsPerPage}
                     onChange={(e) => {
@@ -435,8 +565,8 @@ export function SettingsUsersList() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Go to page:</span>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     min={1}
                     max={totalPages || 1}
                     value={currentPage}
@@ -446,20 +576,24 @@ export function SettingsUsersList() {
                         setCurrentPage(page);
                       }
                     }}
-                    className="w-12 rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-center text-text" 
+                    className="w-12 rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-center text-text"
                   />
                 </div>
-                <div>Page {currentPage} of {totalPages || 1}</div>
+                <div>
+                  Page {currentPage} of {totalPages || 1}
+                </div>
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-1 rounded hover:bg-surface-hover disabled:opacity-50 text-text"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage >= totalPages}
                     className="p-1 rounded hover:bg-surface-hover disabled:opacity-50 text-text"
                   >
@@ -472,14 +606,14 @@ export function SettingsUsersList() {
         </>
       )}
 
-      {activeTab === 'groups' && (
+      {activeTab === "groups" && (
         <>
           <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
               <div className="relative w-72">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-text-muted" />
-                <Input 
-                  placeholder="Search groups..." 
+                <Input
+                  placeholder="Search groups..."
                   className="pl-8 bg-surface border-border"
                   value={searchQuery}
                   onChange={(e) => {
@@ -491,12 +625,18 @@ export function SettingsUsersList() {
             </div>
             <div className="flex items-center gap-2">
               {selectedGroups.length > 0 && (
-                <Button variant="destructive" onClick={handleDeleteSelectedClick}>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteSelectedClick}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete ({selectedGroups.length})
                 </Button>
               )}
-              <Button onClick={handleAddGroup} className="bg-primary hover:bg-primary-hover text-white">
+              <Button
+                onClick={handleAddGroup}
+                className="bg-primary hover:bg-primary-hover text-white"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Group
               </Button>
@@ -510,10 +650,13 @@ export function SettingsUsersList() {
                   <tr>
                     <th className="px-4 py-3 w-12">
                       <div className="flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           className="rounded border-white/30 text-primary focus:ring-white bg-white/10"
-                          checked={selectedGroups.length === paginatedGroups.length && paginatedGroups.length > 0}
+                          checked={
+                            selectedGroups.length === paginatedGroups.length &&
+                            paginatedGroups.length > 0
+                          }
                           onChange={handleSelectAll}
                         />
                       </div>
@@ -528,17 +671,23 @@ export function SettingsUsersList() {
                 <tbody className="divide-y divide-border bg-surface">
                   {paginatedGroups.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-text-muted"
+                      >
                         No groups found.
                       </td>
                     </tr>
                   ) : (
                     paginatedGroups.map((group) => (
-                      <tr key={group.id} className="group hover:bg-surface-hover transition-colors">
+                      <tr
+                        key={group.id}
+                        className="group hover:bg-surface-hover transition-colors"
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               className="rounded border-border text-primary focus:ring-primary bg-background"
                               checked={selectedGroups.includes(group.id)}
                               onChange={() => handleSelectItem(group.id)}
@@ -546,7 +695,9 @@ export function SettingsUsersList() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="font-medium text-text">{group.name}</span>
+                          <span className="font-medium text-text">
+                            {group.name}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-text">
                           {group.description}
@@ -558,29 +709,45 @@ export function SettingsUsersList() {
                           {group.projects}
                         </td>
                         <td className="px-4 py-3 text-center relative">
-                          <button 
-                            onClick={() => setActiveDropdown(activeDropdown === group.id ? null : group.id)}
+                          <button
+                            onClick={() =>
+                              setActiveDropdown(
+                                activeDropdown === group.id ? null : group.id,
+                              )
+                            }
                             className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
-                          
+
                           {activeDropdown === group.id && (
                             <>
-                              <div 
-                                className="fixed inset-0 z-40" 
+                              <div
+                                className="fixed inset-0 z-40"
                                 onClick={() => setActiveDropdown(null)}
                               />
                               <div className="absolute right-8 top-8 z-50 w-32 rounded-md border border-border bg-surface shadow-lg py-1">
-                                <button 
+                                <button
+                                  onClick={() => {
+                                    setViewingGroup(group);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View
+                                </button>
+                                <button
                                   onClick={() => handleEditGroup(group)}
                                   className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                                 </button>
-                                <button 
-                                  onClick={() => handleDeleteSingleClick(group, 'group')}
+                                <button
+                                  onClick={() =>
+                                    handleDeleteSingleClick(group, "group")
+                                  }
                                   className="flex w-full items-center px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -596,18 +763,20 @@ export function SettingsUsersList() {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Pagination */}
             <div className="shrink-0 flex items-center justify-between border-t border-border bg-surface-hover px-4 py-3 sm:px-6">
               <div className="hidden sm:block">
                 <p className="text-xs text-text">
-                  {filteredGroups.length === 0 ? '0 items' : `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredGroups.length)} of ${filteredGroups.length} items`}
+                  {filteredGroups.length === 0
+                    ? "0 items"
+                    : `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredGroups.length)} of ${filteredGroups.length} items`}
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs text-text">
                 <div className="flex items-center gap-2">
                   <span>Rows per page:</span>
-                  <select 
+                  <select
                     className="rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-text"
                     value={rowsPerPage}
                     onChange={(e) => {
@@ -622,8 +791,8 @@ export function SettingsUsersList() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Go to page:</span>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     min={1}
                     max={totalPages || 1}
                     value={currentPage}
@@ -633,20 +802,24 @@ export function SettingsUsersList() {
                         setCurrentPage(page);
                       }
                     }}
-                    className="w-12 rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-center text-text" 
+                    className="w-12 rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-center text-text"
                   />
                 </div>
-                <div>Page {currentPage} of {totalPages || 1}</div>
+                <div>
+                  Page {currentPage} of {totalPages || 1}
+                </div>
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-1 rounded hover:bg-surface-hover disabled:opacity-50 text-text"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage >= totalPages}
                     className="p-1 rounded hover:bg-surface-hover disabled:opacity-50 text-text"
                   >
@@ -659,14 +832,14 @@ export function SettingsUsersList() {
         </>
       )}
 
-      {activeTab === 'roles' && (
+      {activeTab === "roles" && (
         <>
           <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
               <div className="relative w-72">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-text-muted" />
-                <Input 
-                  placeholder="Search roles..." 
+                <Input
+                  placeholder="Search roles..."
                   className="pl-8 bg-surface border-border"
                   value={searchQuery}
                   onChange={(e) => {
@@ -678,12 +851,18 @@ export function SettingsUsersList() {
             </div>
             <div className="flex items-center gap-2">
               {selectedRoles.length > 0 && (
-                <Button variant="destructive" onClick={handleDeleteSelectedClick}>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteSelectedClick}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete ({selectedRoles.length})
                 </Button>
               )}
-              <Button onClick={handleAddRole} className="bg-primary hover:bg-primary-hover text-white">
+              <Button
+                onClick={handleAddRole}
+                className="bg-primary hover:bg-primary-hover text-white"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Role
               </Button>
@@ -697,10 +876,13 @@ export function SettingsUsersList() {
                   <tr>
                     <th className="px-4 py-3 w-12">
                       <div className="flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           className="rounded border-white/30 text-primary focus:ring-white bg-white/10"
-                          checked={selectedRoles.length === paginatedRoles.length && paginatedRoles.length > 0}
+                          checked={
+                            selectedRoles.length === paginatedRoles.length &&
+                            paginatedRoles.length > 0
+                          }
                           onChange={handleSelectAll}
                         />
                       </div>
@@ -714,17 +896,23 @@ export function SettingsUsersList() {
                 <tbody className="divide-y divide-border bg-surface">
                   {paginatedRoles.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-text-muted">
+                      <td
+                        colSpan={5}
+                        className="px-4 py-8 text-center text-text-muted"
+                      >
                         No roles found.
                       </td>
                     </tr>
                   ) : (
                     paginatedRoles.map((role) => (
-                      <tr key={role.id} className="group hover:bg-surface-hover transition-colors">
+                      <tr
+                        key={role.id}
+                        className="group hover:bg-surface-hover transition-colors"
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               className="rounded border-border text-primary focus:ring-primary bg-background"
                               checked={selectedRoles.includes(role.id)}
                               onChange={() => handleSelectItem(role.id)}
@@ -732,7 +920,9 @@ export function SettingsUsersList() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="font-medium text-text">{role.name}</span>
+                          <span className="font-medium text-text">
+                            {role.name}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-text">
                           {role.description}
@@ -741,29 +931,45 @@ export function SettingsUsersList() {
                           {role.users}
                         </td>
                         <td className="px-4 py-3 text-center relative">
-                          <button 
-                            onClick={() => setActiveDropdown(activeDropdown === role.id ? null : role.id)}
+                          <button
+                            onClick={() =>
+                              setActiveDropdown(
+                                activeDropdown === role.id ? null : role.id,
+                              )
+                            }
                             className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
-                          
+
                           {activeDropdown === role.id && (
                             <>
-                              <div 
-                                className="fixed inset-0 z-40" 
+                              <div
+                                className="fixed inset-0 z-40"
                                 onClick={() => setActiveDropdown(null)}
                               />
                               <div className="absolute right-8 top-8 z-50 w-32 rounded-md border border-border bg-surface shadow-lg py-1">
-                                <button 
+                                <button
+                                  onClick={() => {
+                                    setViewingRole(role);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View
+                                </button>
+                                <button
                                   onClick={() => handleEditRole(role)}
                                   className="flex w-full items-center px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                                 </button>
-                                <button 
-                                  onClick={() => handleDeleteSingleClick(role, 'role')}
+                                <button
+                                  onClick={() =>
+                                    handleDeleteSingleClick(role, "role")
+                                  }
                                   className="flex w-full items-center px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -779,18 +985,20 @@ export function SettingsUsersList() {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Pagination */}
             <div className="shrink-0 flex items-center justify-between border-t border-border bg-surface-hover px-4 py-3 sm:px-6">
               <div className="hidden sm:block">
                 <p className="text-xs text-text">
-                  {filteredRoles.length === 0 ? '0 items' : `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredRoles.length)} of ${filteredRoles.length} items`}
+                  {filteredRoles.length === 0
+                    ? "0 items"
+                    : `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredRoles.length)} of ${filteredRoles.length} items`}
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs text-text">
                 <div className="flex items-center gap-2">
                   <span>Rows per page:</span>
-                  <select 
+                  <select
                     className="rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-text"
                     value={rowsPerPage}
                     onChange={(e) => {
@@ -805,8 +1013,8 @@ export function SettingsUsersList() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Go to page:</span>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     min={1}
                     max={totalPages || 1}
                     value={currentPage}
@@ -816,20 +1024,24 @@ export function SettingsUsersList() {
                         setCurrentPage(page);
                       }
                     }}
-                    className="w-12 rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-center text-text" 
+                    className="w-12 rounded border border-white/20 bg-surface-hover px-2 py-1 text-xs outline-none text-center text-text"
                   />
                 </div>
-                <div>Page {currentPage} of {totalPages || 1}</div>
+                <div>
+                  Page {currentPage} of {totalPages || 1}
+                </div>
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-1 rounded hover:bg-surface-hover disabled:opacity-50 text-text"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage >= totalPages}
                     className="p-1 rounded hover:bg-surface-hover disabled:opacity-50 text-text"
                   >
@@ -865,21 +1077,33 @@ export function SettingsUsersList() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         title={
-          itemToDelete 
-            ? `Delete ${deleteType === 'user' ? 'User' : deleteType === 'group' ? 'Group' : 'Role'} ${itemToDelete.name}` 
-            : `Delete ${deleteType === 'user' ? selectedUsers.length : deleteType === 'group' ? selectedGroups.length : selectedRoles.length} ${deleteType === 'user' ? 'Users' : deleteType === 'group' ? 'Groups' : 'Roles'}`
+          itemToDelete
+            ? `Delete ${deleteType === "user" ? "User" : deleteType === "group" ? "Group" : "Role"} ${itemToDelete.name}`
+            : `Delete ${deleteType === "user" ? selectedUsers.length : deleteType === "group" ? selectedGroups.length : selectedRoles.length} ${deleteType === "user" ? "Users" : deleteType === "group" ? "Groups" : "Roles"}`
         }
         description={
-          itemToDelete 
-            ? `Are you sure you want to delete ${deleteType === 'user' ? 'User' : deleteType === 'group' ? 'Group' : 'Role'} ${itemToDelete.name}? This action cannot be undone.` 
-            : `Are you sure you want to delete these ${deleteType === 'user' ? selectedUsers.length : deleteType === 'group' ? selectedGroups.length : selectedRoles.length} ${deleteType === 'user' ? 'Users' : deleteType === 'group' ? 'Groups' : 'Roles'}? This action cannot be undone.`
+          itemToDelete
+            ? `Are you sure you want to delete ${deleteType === "user" ? "User" : deleteType === "group" ? "Group" : "Role"} ${itemToDelete.name}? This action cannot be undone.`
+            : `Are you sure you want to delete these ${deleteType === "user" ? selectedUsers.length : deleteType === "group" ? selectedGroups.length : selectedRoles.length} ${deleteType === "user" ? "Users" : deleteType === "group" ? "Groups" : "Roles"}? This action cannot be undone.`
         }
       />
 
-      <UserSidePanel 
-        isOpen={!!viewingUser} 
-        onClose={() => setViewingUser(null)} 
-        user={viewingUser} 
+      <UserSidePanel
+        isOpen={!!viewingUser}
+        onClose={() => setViewingUser(null)}
+        user={viewingUser}
+      />
+
+      <GroupSidePanel
+        isOpen={!!viewingGroup}
+        onClose={() => setViewingGroup(null)}
+        group={viewingGroup}
+      />
+
+      <RoleSidePanel
+        isOpen={!!viewingRole}
+        onClose={() => setViewingRole(null)}
+        role={viewingRole}
       />
     </div>
   );

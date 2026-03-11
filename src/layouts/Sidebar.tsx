@@ -54,13 +54,14 @@ export function Sidebar({ onClose, isCollapsed, toggleCollapse }: SidebarProps) 
     ];
   } else if (isProject) {
     title = currentProject ? currentProject.name : `Project ${projectId}`;
-    backLink = { name: 'All Projects', href: '/projects' };
+    backLink = { name: 'Dashboard', href: '/' };
     navigation = [
       { name: 'Project Overview', href: `/projects/${projectId}`, icon: LayoutDashboard, exact: true },
       { name: 'Test Cases', href: `/projects/${projectId}/test-cases`, icon: FileText },
-      { name: 'Test Runs', href: `/projects/${projectId}/test-runs`, icon: PlayCircle },
+      { name: 'Test Runs & Plans', href: `/projects/${projectId}/test-runs`, icon: PlayCircle },
+      { name: 'Milestones', href: `/projects/${projectId}/milestones`, icon: FolderKanban },
       { name: 'Defects', href: `/projects/${projectId}/defects`, icon: Bug },
-      { name: 'Reports', href: `/projects/${projectId}/reports`, icon: BarChart3 },
+      { name: 'Report', href: `/projects/${projectId}/reports`, icon: BarChart3 },
     ];
   } else {
     navigation = [
