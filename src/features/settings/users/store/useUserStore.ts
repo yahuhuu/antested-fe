@@ -6,10 +6,10 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
-  role: string;
+  roleId: string;
   status: 'Active' | 'Inactive';
-  groups: number;
-  projects: number;
+  groupIds: string[];
+  projectIds: string[];
   lastActive: string;
 }
 

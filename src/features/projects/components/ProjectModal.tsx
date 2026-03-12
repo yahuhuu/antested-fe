@@ -246,7 +246,7 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
               Assign Users <span className="text-xs font-normal text-text-muted">(Optional)</span>
             </label>
             <MultiSelect
-              options={users.filter(u => u.role !== 'Admin').map(u => ({ id: u.id, name: u.name }))}
+              options={users.filter(u => u.roleId !== 'role-1').map(u => ({ id: u.id, name: u.name }))}
               selectedIds={formData.selectedUsers}
               onChange={(ids) => setFormData(prev => ({ ...prev, selectedUsers: ids }))}
               placeholder="Add user..."

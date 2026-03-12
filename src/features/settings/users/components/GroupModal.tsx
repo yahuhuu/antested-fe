@@ -32,8 +32,8 @@ export function GroupModal({ isOpen, onClose, group }: GroupModalProps) {
       setFormData({
         name: group.name,
         description: group.description,
-        selectedUsers: [], // In a real app, you'd populate this from the group's users
-        selectedProjects: [], // In a real app, you'd populate this from the group's projects
+        selectedUsers: group.userIds || [],
+        selectedProjects: group.projectIds || [],
       });
     } else {
       setFormData({
@@ -51,15 +51,15 @@ export function GroupModal({ isOpen, onClose, group }: GroupModalProps) {
       updateGroup(group.id, {
         name: formData.name,
         description: formData.description,
-        users: formData.selectedUsers.length || group.users,
-        projects: formData.selectedProjects.length || group.projects,
+        userIds: formData.selectedUsers,
+        projectIds: formData.selectedProjects,
       });
     } else {
       addGroup({
         name: formData.name,
         description: formData.description,
-        users: formData.selectedUsers.length,
-        projects: formData.selectedProjects.length,
+        userIds: formData.selectedUsers,
+        projectIds: formData.selectedProjects,
       });
     }
     onClose();

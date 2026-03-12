@@ -82,7 +82,7 @@ export function RoleModal({ isOpen, onClose, role }: RoleModalProps) {
       addRole({
         name: formData.name,
         description: formData.description,
-        users: 0,
+        userIds: [],
         permissions: formData.permissions,
       });
     }

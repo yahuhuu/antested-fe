@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { mockApi } from '@/api/mockApi';
 
 export interface Directory {
   id: string;
@@ -10,39 +11,58 @@ export interface Directory {
 
 interface DirectoryState {
   directories: Directory[];
+  isLoading: boolean;
+  error: string | null;
   fetchDirectories: (projectId: string) => Promise<void>;
   addDirectory: (directory: Omit<Directory, 'id'>) => Promise<void>;
   updateDirectory: (id: string, directory: Partial<Directory>) => Promise<void>;
   deleteDirectory: (id: string) => Promise<void>;
 }
 
-// Initial mock data
-const initialDirectories: Directory[] = [
-  { id: 'dir-1', projectId: 'PRJ-1', name: 'Authentication', description: 'Login, registration, and password recovery', parentId: null },
-  { id: 'dir-2', projectId: 'PRJ-1', name: 'Dashboard', description: 'Main user dashboard features', parentId: null },
-  { id: 'dir-3', projectId: 'PRJ-1', name: 'Payments', description: 'Payment processing and history', parentId: null },
-  { id: 'dir-4', projectId: 'PRJ-1', name: 'Settings', description: 'User settings and preferences', parentId: null },
-  { id: 'dir-5', projectId: 'PRJ-1', name: 'Login', description: 'Login tests', parentId: 'dir-1' },
-];
-
 export const useDirectoryStore = create<DirectoryState>((set) => ({
-  directories: initialDirectories,
+  directories: [],
+  isLoading: false,
+  error: null,
   fetchDirectories: async (projectId) => {
-    // In a real app, this would fetch from an API
-    // For now, we just use the initial mock data
+    set({ isLoading: true, error: null });
+    try {
+      const data = await mockApi.getDirectories(projectId);
+      set({ directories: data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
   },
   addDirectory: async (directory) => {
-    const newDir = { ...directory, id: `dir-${Date.now()}` };
-    set((state) => ({ directories: [...state.directories, newDir] }));
+    set({ isLoading: true, error: null });
+    try {
+      const newDir = await mockApi.addDirectory(directory);
+      set((state) => ({ directories: [...state.directories, newDir], isLoading: false }));
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
   },
   updateDirectory: async (id, directory) => {
-    set((state) => ({
-      directories: state.directories.map((d) => (d.id === id ? { ...d, ...directory } : d)),
-    }));
+    set({ isLoading: true, error: null });
+    try {
+      const updatedDir = await mockApi.updateDirectory(id, directory);
+      set((state) => ({
+        directories: state.directories.map((d) => (d.id === id ? updatedDir : d)),
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
   },
   deleteDirectory: async (id) => {
-    set((state) => ({
-      directories: state.directories.filter((d) => d.id !== id && d.parentId !== id),
-    }));
+    set({ isLoading: true, error: null });
+    try {
+      await mockApi.deleteDirectory(id);
+      set((state) => ({
+        directories: state.directories.filter((d) => d.id !== id && d.parentId !== id),
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
   },
 }));

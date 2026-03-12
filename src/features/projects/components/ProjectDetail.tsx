@@ -90,8 +90,8 @@ export function ProjectDetail() {
       }
     });
 
-    // Count test cases
-    testCases.forEach(tc => {
+    // Count test cases (excluding drafts)
+    testCases.filter(tc => tc.reviewStatus !== 'Draft').forEach(tc => {
       let currentDirId: string | null = tc.directory || null;
       while (currentDirId && dirMap.has(currentDirId)) {
         const node = dirMap.get(currentDirId)!;
@@ -113,7 +113,9 @@ export function ProjectDetail() {
         return [parentId, ...children.flatMap(getDescendantIds)];
       };
       const validDirIds = getDescendantIds(activeSuite);
-      cases = testCases.filter(tc => validDirIds.includes(tc.directory || 'Uncategorized'));
+      cases = testCases.filter(tc => validDirIds.includes(tc.directory || 'Uncategorized') && tc.reviewStatus !== 'Draft');
+    } else if (activeSuite === 'All Test Cases') {
+      cases = testCases.filter(tc => tc.reviewStatus !== 'Draft');
     } else if (activeSuite === 'Drafts') {
       cases = testCases.filter(tc => tc.reviewStatus === 'Draft');
     } else if (activeSuite === 'Trash') {

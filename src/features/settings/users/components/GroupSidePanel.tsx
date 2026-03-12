@@ -25,8 +25,8 @@ export function GroupSidePanel({
   const { users } = useUserStore();
   const { projects } = useProjectStore();
 
-  const groupUsers = group ? users.slice(0, group.users) : [];
-  const groupProjects = group ? projects.slice(0, group.projects) : [];
+  const groupUsers = group ? users.filter(u => group.userIds.includes(u.id)) : [];
+  const groupProjects = group ? projects.filter(p => group.projectIds.includes(p.id)) : [];
 
   return (
     <SidePanel
@@ -87,7 +87,7 @@ export function GroupSidePanel({
                     Users
                   </div>
                   <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">
-                    {group.users}
+                    {group.userIds.length}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -116,7 +116,7 @@ export function GroupSidePanel({
                     Projects
                   </div>
                   <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">
-                    {group.projects}
+                    {group.projectIds.length}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">

@@ -75,11 +75,11 @@ export function RoleSidePanel({ isOpen, onClose, role }: RoleSidePanelProps) {
                     Assigned Users
                   </div>
                   <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">
-                    {role.users}
+                    {role.userIds.length}
                   </span>
                 </div>
                 <p className="text-xs text-text-muted">
-                  This role is currently assigned to {role.users} users across
+                  This role is currently assigned to {role.userIds.length} users across
                   the system.
                 </p>
               </div>

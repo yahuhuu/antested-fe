@@ -7,198 +7,40 @@ import { CaseField, TestStepTemplate, TestCaseTemplate } from '@/features/settin
 import { Role, RolePermissions } from '@/features/settings/users/store/useRoleStore';
 import { User } from '@/features/settings/users/store/useUserStore';
 import { Group } from '@/features/settings/users/store/useGroupStore';
+import { Directory } from '@/features/projects/store/useDirectoryStore';
+import generatedData from './generated_data.json';
 
-// Initial Mock Data
-const initialProjects: Project[] = [
-  {
-    id: "d813917c-5942-484f-9e44-e4d416d9a056",
-    name: "Nobi Dana Kripto",
-    key: "NDK",
-    description: "Platform for crypto investment and savings.",
-    enable_test_case_approval: true,
-    test_cases: {
-      total_test_cases: 450,
-      status: { draft: 300, under_review: 10, rejected: 40, ready: 100 }
-    },
-    test_runs: {
-      total_test_runs: 4,
-      status: { open: 2, overdue: 1, completed: 1 }
-    },
-    test_plans: {
-      total_test_plans: 4,
-      status: { open: 2, overdue: 1, completed: 1 }
-    },
-    milestones: {
-      total_milestones: 4,
-      status: { open: 2, overdue: 1, completed: 1 }
-    },
-    defects: {
-      total_defects: 10,
-      status: { failed: 5, in_progress: 2, fixed: 2, in_testing: 1 }
-    },
-    test_case_templates: {
-      id: "1",
-      name: "Default Template",
-      description: "Standard template for UI tests"
-    },
-    access_management: {
-      users: {
-        total_users: 3,
-        data: [
-          { id: "usr-1", name: "Admin User", email: "admin@example.com" },
-          { id: "usr-2", name: "Alice Johnson", email: "alice.j@example.com" },
-          { id: "usr-3", name: "Bob Williams", email: "bob.w@example.com" }
-        ]
-      },
-      groups: {
-        total_groups: 3,
-        data: [
-          { id: "grp-1", name: "Frontend Team", description: "QA engineers focusing on frontend testing." },
-          { id: "grp-2", name: "Backend Team", description: "QA engineers focusing on API and backend testing." },
-          { id: "grp-3", name: "Mobile Team", description: "QA engineers focusing on iOS and Android apps." }
-        ]
-      }
-    }
-  },
-  {
-    id: "PRJ-2",
-    name: "Akulaku",
-    key: "AKL",
-    description: "Financial services and buy-now-pay-later platform.",
-    enable_test_case_approval: false,
-    test_cases: {
-      total_test_cases: 400,
-      status: { ready: 400 }
-    },
-    test_runs: {
-      total_test_runs: 2,
-      status: { open: 1, overdue: 0, completed: 1 }
-    },
-    test_plans: {
-      total_test_plans: 2,
-      status: { open: 1, overdue: 0, completed: 1 }
-    },
-    milestones: {
-      total_milestones: 2,
-      status: { open: 1, overdue: 0, completed: 1 }
-    },
-    defects: {
-      total_defects: 8,
-      status: { failed: 3, in_progress: 2, fixed: 2, in_testing: 1 }
-    },
-    test_case_templates: {
-      id: "2",
-      name: "API Template",
-      description: "Template for backend API tests"
-    },
-    access_management: {
-      users: {
-        total_users: 1,
-        data: [
-          { id: "usr-3", name: "Bob Williams", email: "bob.w@example.com" }
-        ]
-      },
-      groups: {
-        total_groups: 1,
-        data: [
-          { id: "grp-2", name: "Backend Team", description: "QA engineers focusing on API and backend testing." }
-        ]
-      }
-    }
-  },
-  {
-    id: "PRJ-3",
-    name: "Traveloka",
-    key: "TVL",
-    description: "All-in-one travel booking platform for flights, hotels, and activities.",
-    enable_test_case_approval: true,
-    test_cases: {
-      total_test_cases: 150,
-      status: { draft: 50, under_review: 20, rejected: 10, ready: 70 }
-    },
-    test_runs: {
-      total_test_runs: 0,
-      status: { open: 0, overdue: 0, completed: 0 }
-    },
-    test_plans: {
-      total_test_plans: 0,
-      status: { open: 0, overdue: 0, completed: 0 }
-    },
-    milestones: {
-      total_milestones: 0,
-      status: { open: 0, overdue: 0, completed: 0 }
-    },
-    defects: {
-      total_defects: 2,
-      status: { failed: 1, in_progress: 1, fixed: 0, in_testing: 0 }
-    },
-    test_case_templates: {
-      id: "1",
-      name: "Default Template",
-      description: "Standard template for UI tests"
-    },
-    access_management: {
-      users: { total_users: 0, data: [] },
-      groups: { total_groups: 0, data: [] }
-    }
-  },
-  {
-    id: "PRJ-4",
-    name: "Tokopedia",
-    key: "TKP",
-    description: "E-commerce platform.",
-    enable_test_case_approval: false,
-    test_cases: {
-      total_test_cases: 210,
-      status: { ready: 210 }
-    },
-    test_runs: {
-      total_test_runs: 3,
-      status: { open: 2, overdue: 0, completed: 1 }
-    },
-    test_plans: {
-      total_test_plans: 3,
-      status: { open: 2, overdue: 0, completed: 1 }
-    },
-    milestones: {
-      total_milestones: 3,
-      status: { open: 2, overdue: 0, completed: 1 }
-    },
-    defects: {
-      total_defects: 5,
-      status: { failed: 2, in_progress: 1, fixed: 1, in_testing: 1 }
-    },
-    test_case_templates: {
-      id: "1",
-      name: "Default Template",
-      description: "Standard template for UI tests"
-    },
-    access_management: {
-      users: { total_users: 0, data: [] },
-      groups: { total_groups: 0, data: [] }
-    }
-  }
-];
+const initialProjects: Project[] = generatedData.projects;
+const initialTestCases: TestCase[] = generatedData.testCases as TestCase[];
+const initialDirectories: Directory[] = generatedData.directories;
 
 const initialCaseFields: CaseField[] = [
-  { id: '1', name: 'Test Case Type', description: 'Type of the test case.', type: 'Dropdown', testCaseTemplate: ['1', '2'], options: ['Functional', 'Performance', 'Security'] },
-  { id: '2', name: 'Priority', description: 'Priority of the test case.', type: 'Dropdown', testCaseTemplate: ['1', '2', '3'], options: ['High', 'Medium', 'Low'] },
-  { id: '3', name: 'Assign To', description: 'The user assigned to this test case.', type: 'User', testCaseTemplate: ['1'] },
-  { id: '4', name: 'Preconditions', description: 'Conditions that must be met before the test case can be executed.', type: 'Text', testCaseTemplate: ['1', '2', '3'] },
-  { id: '5', name: 'Is Automated', description: 'Check if this test case is automated.', type: 'Checkbox', testCaseTemplate: ['1'] },
-  { id: '6', name: 'Sprint', description: 'The sprint number associated with this test case.', type: 'String', testCaseTemplate: ['1'] },
-  { id: '7', name: 'Browser', description: 'The browser used for testing.', type: 'Dropdown', testCaseTemplate: ['1'], options: ['Chrome', 'Firefox', 'Safari', 'Edge'] },
+  { id: 'cf1', name: 'Test Case Type (Required)', description: '', type: 'Dropdown', testCaseTemplate: ['1'], required: true, options: ['Functional', 'Performance', 'Security', 'Usability'] },
+  { id: 'cf2', name: 'Test Case Type (Not Required)', description: '', type: 'Dropdown', testCaseTemplate: ['2'], required: false, options: ['Functional', 'Performance', 'Security', 'Usability'] },
+  { id: 'cf3', name: 'Test Suite Type (Required)', description: '', type: 'Dropdown', testCaseTemplate: ['1'], required: true, options: ['smoke', 'sanity', 'regression', 'integration', 'end-to-end (E2E)', 'User Acceptance Testing (UAT)', 'Sistem Integration Testing (SIT)'] },
+  { id: 'cf4', name: 'Test Suite Type (Not Required)', description: '', type: 'Dropdown', testCaseTemplate: ['2'], required: false, options: ['smoke', 'sanity', 'regression', 'integration', 'end-to-end (E2E)', 'User Acceptance Testing (UAT)', 'Sistem Integration Testing (SIT)'] },
+  { id: 'cf5', name: 'Priority (Required)', description: '', type: 'Dropdown', testCaseTemplate: ['1'], required: true, options: ['critical', 'high', 'medium', 'low'] },
+  { id: 'cf6', name: 'Priority (Not Required)', description: '', type: 'Dropdown', testCaseTemplate: ['2'], required: false, options: ['critical', 'high', 'medium', 'low'] },
+  { id: 'cf7', name: 'Assign To User (Required)', description: '', type: 'User', testCaseTemplate: ['1'], required: true },
+  { id: 'cf8', name: 'Assign To User (Not Required)', description: '', type: 'User', testCaseTemplate: ['2'], required: false },
+  { id: 'cf9', name: 'Assign To Group (Required)', description: '', type: 'Group', testCaseTemplate: ['1'], required: true },
+  { id: 'cf10', name: 'Assign To Group (Not Required)', description: '', type: 'Group', testCaseTemplate: ['2'], required: false },
+  { id: 'cf11', name: 'Pre-conditions (Required)', description: '', type: 'Text', testCaseTemplate: ['1'], required: true },
+  { id: 'cf12', name: 'Pre-conditions (Not Required)', description: '', type: 'Text', testCaseTemplate: ['2'], required: false },
+  { id: 'cf13', name: 'Is Automated (Not Required)', description: '', type: 'Checkbox', testCaseTemplate: ['1', '2'], required: false },
+  { id: 'cf14', name: 'Browser (Required)', description: '', type: 'Dropdown', testCaseTemplate: ['1'], required: true, options: ['chrome', 'mozila', 'safari', 'Microsoft edge'] },
+  { id: 'cf15', name: 'Browser (Not Required)', description: '', type: 'Dropdown', testCaseTemplate: ['2'], required: false, options: ['chrome', 'mozila', 'safari', 'Microsoft edge'] },
 ];
 
 const initialTestStepTemplates: TestStepTemplate[] = [
   { 
     id: '1', 
-    name: 'Test Step (Single Step)', 
+    name: 'Test Step (Single Steps)', 
     description: 'A simple template with one area for steps and one for expected results.', 
     testCaseTemplate: ['1'],
     fields: [
       { id: 'f1', name: 'Steps', type: 'Text Area' },
-      { id: 'f2', name: 'Expected Results', type: 'Text Area' }
+      { id: 'f2', name: 'Expected Result', type: 'Text Area' }
     ]
   },
   { 
@@ -212,10 +54,47 @@ const initialTestStepTemplates: TestStepTemplate[] = [
         name: 'Steps', 
         type: 'Repeater',
         subFields: [
-          { id: 'sf1', name: 'Step Description', type: 'Text Area' },
+          { id: 'sf1', name: 'Test Step', type: 'Text Area' },
           { id: 'sf2', name: 'Expected Result', type: 'Text Area' }
         ]
       }
+    ]
+  },
+  { 
+    id: '3', 
+    name: 'Test Step (Multiple Steps With Test Data)', 
+    description: 'A template for test cases with multiple steps and test data.', 
+    testCaseTemplate: ['1'],
+    fields: [
+      { 
+        id: 'f4', 
+        name: 'Steps', 
+        type: 'Repeater',
+        subFields: [
+          { id: 'sf3', name: 'Test Step', type: 'Text Area' },
+          { id: 'sf4', name: 'Test Data', type: 'Text Area' },
+          { id: 'sf5', name: 'Expected Result', type: 'Text Area' }
+        ]
+      }
+    ]
+  },
+  { 
+    id: '4', 
+    name: 'Behaviour Driven Development', 
+    description: 'A template for BDD scenarios.', 
+    testCaseTemplate: ['1'],
+    fields: [
+      { id: 'f5', name: 'Scenario Description', type: 'Text Area' }
+    ]
+  },
+  { 
+    id: '5', 
+    name: 'Exploratory Sessions', 
+    description: 'A template for exploratory testing sessions.', 
+    testCaseTemplate: ['1'],
+    fields: [
+      { id: 'f6', name: 'Missions', type: 'Text Area' },
+      { id: 'f7', name: 'Goals', type: 'Text Area' }
     ]
   },
 ];
@@ -223,34 +102,109 @@ const initialTestStepTemplates: TestStepTemplate[] = [
 const initialTestCaseTemplates: TestCaseTemplate[] = [
   { 
     id: '1', 
-    name: 'Default Template', 
-    description: 'Standard template for UI tests', 
+    name: 'Behaviour Driven Development', 
+    description: 'Template for BDD scenarios', 
     fields: [
       {id: 'title', width: 12, section: 1, column: 1}, 
       {id: 'directory', width: 12, section: 2, column: 1}, 
-      {id: '1', width: 6, section: 3, column: 1}, 
-      {id: '2', width: 6, section: 3, column: 2}, 
-      {id: '3', width: 6, section: 4, column: 1}, 
-      {id: '4', width: 12, section: 4, column: 2}, 
-      {id: '5', width: 6, section: 5, column: 1}, 
-      {id: '6', width: 6, section: 5, column: 2}, 
-      {id: '7', width: 6, section: 5, column: 3}
+      {id: 'cf1', width: 3, section: 3, column: 1}, 
+      {id: 'cf3', width: 3, section: 3, column: 2}, 
+      {id: 'cf15', width: 3, section: 3, column: 3}, 
+      {id: 'cf5', width: 3, section: 3, column: 4}
     ], 
-    testStepTemplateMode: 'dynamic' 
+    testStepTemplateMode: 'strict',
+    testStepTemplateId: '4'
   },
   { 
     id: '2', 
-    name: 'API Template', 
-    description: 'Template for backend API tests', 
+    name: 'Test Step (Single Steps)', 
+    description: 'Template for single step test cases', 
     fields: [
       {id: 'title', width: 12, section: 1, column: 1}, 
       {id: 'directory', width: 12, section: 2, column: 1}, 
-      {id: '1', width: 6, section: 3, column: 1}, 
-      {id: '2', width: 6, section: 3, column: 2}, 
-      {id: '4', width: 12, section: 4, column: 1}
+      {id: 'cf11', width: 12, section: 3, column: 1}, 
+      {id: 'cf1', width: 3, section: 4, column: 1}, 
+      {id: 'cf3', width: 3, section: 4, column: 2}, 
+      {id: 'cf15', width: 3, section: 4, column: 3}, 
+      {id: 'cf5', width: 3, section: 4, column: 4},
+      {id: 'cf8', width: 6, section: 5, column: 1},
+      {id: 'cf10', width: 6, section: 5, column: 2}
     ], 
     testStepTemplateMode: 'strict', 
     testStepTemplateId: '1' 
+  },
+  { 
+    id: '3', 
+    name: 'Test Step (Multiple Steps)', 
+    description: 'Template for multiple steps test cases', 
+    fields: [
+      {id: 'title', width: 12, section: 1, column: 1}, 
+      {id: 'directory', width: 12, section: 2, column: 1}, 
+      {id: 'cf11', width: 12, section: 3, column: 1}, 
+      {id: 'cf1', width: 3, section: 4, column: 1}, 
+      {id: 'cf3', width: 3, section: 4, column: 2}, 
+      {id: 'cf15', width: 3, section: 4, column: 3}, 
+      {id: 'cf5', width: 3, section: 4, column: 4},
+      {id: 'cf7', width: 4, section: 5, column: 1},
+      {id: 'cf10', width: 4, section: 5, column: 2},
+      {id: 'cf14', width: 4, section: 5, column: 3}
+    ], 
+    testStepTemplateMode: 'strict', 
+    testStepTemplateId: '2' 
+  },
+  { 
+    id: '4', 
+    name: 'Test Step (Multiple Steps With Test Data)', 
+    description: 'Template for multiple steps with test data', 
+    fields: [
+      {id: 'title', width: 12, section: 1, column: 1}, 
+      {id: 'directory', width: 12, section: 2, column: 1}, 
+      {id: 'cf11', width: 12, section: 3, column: 1}, 
+      {id: 'cf1', width: 3, section: 4, column: 1}, 
+      {id: 'cf3', width: 3, section: 4, column: 2}, 
+      {id: 'cf15', width: 3, section: 4, column: 3}, 
+      {id: 'cf5', width: 3, section: 4, column: 4},
+      {id: 'cf7', width: 4, section: 5, column: 1},
+      {id: 'cf10', width: 4, section: 5, column: 2},
+      {id: 'cf14', width: 4, section: 5, column: 3}
+    ], 
+    testStepTemplateMode: 'strict', 
+    testStepTemplateId: '3' 
+  },
+  { 
+    id: '5', 
+    name: 'Exploratory Sessions', 
+    description: 'Template for exploratory sessions', 
+    fields: [
+      {id: 'title', width: 12, section: 1, column: 1}, 
+      {id: 'directory', width: 12, section: 2, column: 1}, 
+      {id: 'cf12', width: 12, section: 3, column: 1}, 
+      {id: 'cf2', width: 3, section: 4, column: 1}, 
+      {id: 'cf4', width: 3, section: 4, column: 2}, 
+      {id: 'cf15', width: 3, section: 4, column: 3}, 
+      {id: 'cf5', width: 6, section: 5, column: 1},
+      {id: 'cf14', width: 6, section: 5, column: 2}
+    ], 
+    testStepTemplateMode: 'strict', 
+    testStepTemplateId: '3' 
+  },
+  { 
+    id: '6', 
+    name: 'Dynamic Template', 
+    description: 'Template with dynamic test steps', 
+    fields: [
+      {id: 'title', width: 12, section: 1, column: 1}, 
+      {id: 'directory', width: 12, section: 2, column: 1}, 
+      {id: 'cf12', width: 12, section: 3, column: 1}, 
+      {id: 'cf2', width: 3, section: 4, column: 1}, 
+      {id: 'cf4', width: 3, section: 4, column: 2}, 
+      {id: 'cf15', width: 3, section: 4, column: 3}, 
+      {id: 'cf6', width: 3, section: 4, column: 4},
+      {id: 'cf8', width: 4, section: 5, column: 1},
+      {id: 'cf10', width: 4, section: 5, column: 2},
+      {id: 'cf15', width: 4, section: 5, column: 3}
+    ], 
+    testStepTemplateMode: 'dynamic'
   },
 ];
 
@@ -285,23 +239,42 @@ const adminPermissions: RolePermissions = {
 };
 
 const initialRoles: Role[] = [
-  { id: 'role-1', name: 'Admin', description: 'Full access to all projects and settings.', users: 2, permissions: adminPermissions },
-  { id: 'role-2', name: 'Lead', description: 'Can manage projects and users within their groups.', users: 5, permissions: { ...defaultPermissions, projects: { create: true, read: true, update: true, delete: false } } },
-  { id: 'role-3', name: 'Developer', description: 'Can execute tests and manage defects.', users: 10, permissions: { ...defaultPermissions, bugs: { create: true, read: true, update: true, delete: false } } },
-  { id: 'role-4', name: 'Tester', description: 'Can execute tests and report defects.', users: 15, permissions: { ...defaultPermissions, testRuns: { create: true, read: true, update: true, delete: false } } },
-  { id: 'role-5', name: 'Guest', description: 'Read-only access to assigned projects.', users: 3, permissions: defaultPermissions },
+  { id: 'role-1', name: 'Admin', description: 'Full access to all projects and settings.', userIds: ['usr-1'], permissions: adminPermissions },
+  { id: 'role-2', name: 'Lead', description: 'Can manage projects and users within their groups.', userIds: ['usr-4', 'usr-9', 'usr-16'], permissions: { ...defaultPermissions, projects: { create: true, read: true, update: true, delete: false } } },
+  { id: 'role-3', name: 'Developer', description: 'Can execute tests and manage defects.', userIds: ['usr-3', 'usr-6', 'usr-10', 'usr-12', 'usr-15', 'usr-18'], permissions: { ...defaultPermissions, bugs: { create: true, read: true, update: true, delete: false } } },
+  { id: 'role-4', name: 'Tester', description: 'Can execute tests and report defects.', userIds: ['usr-2', 'usr-5', 'usr-8', 'usr-11', 'usr-13', 'usr-17', 'usr-19'], permissions: { ...defaultPermissions, testRuns: { create: true, read: true, update: true, delete: false } } },
+  { id: 'role-5', name: 'Guest', description: 'Read-only access to assigned projects.', userIds: ['usr-7', 'usr-14', 'usr-20'], permissions: defaultPermissions },
 ];
 
 const initialUsers: User[] = [
-  { id: 'usr-1', name: 'Admin User', email: 'admin@example.com', avatar: 'https://picsum.photos/seed/admin/100/100', role: 'Lead', status: 'Active', groups: 2, projects: 3, lastActive: '2 hours ago' },
-  { id: 'usr-2', name: 'Alice Johnson', email: 'alice.j@example.com', avatar: 'https://picsum.photos/seed/alice/100/100', role: 'Tester', status: 'Active', groups: 1, projects: 3, lastActive: '5 hours ago' },
-  { id: 'usr-3', name: 'Bob Williams', email: 'bob.w@example.com', avatar: 'https://picsum.photos/seed/bob/100/100', role: 'Developer', status: 'Active', groups: 1, projects: 2, lastActive: '1 day ago' },
+  { id: 'usr-1', name: 'Admin User', email: 'admin@example.com', avatar: 'https://picsum.photos/seed/admin/100/100', roleId: 'role-1', status: 'Active', groupIds: ['grp-1', 'grp-2'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3'], lastActive: '2 hours ago' },
+  { id: 'usr-2', name: 'Alice Johnson', email: 'alice.j@example.com', avatar: 'https://picsum.photos/seed/alice/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-1'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3'], lastActive: '5 hours ago' },
+  { id: 'usr-3', name: 'Bob Williams', email: 'bob.w@example.com', avatar: 'https://picsum.photos/seed/bob/100/100', roleId: 'role-3', status: 'Active', groupIds: ['grp-2'], projectIds: ['PRJ-1', 'PRJ-2'], lastActive: '1 day ago' },
+  { id: 'usr-4', name: 'Charlie Brown', email: 'charlie.b@example.com', avatar: 'https://picsum.photos/seed/charlie/100/100', roleId: 'role-2', status: 'Inactive', groupIds: [], projectIds: ['PRJ-1'], lastActive: '2 weeks ago' },
+  { id: 'usr-5', name: 'David Smith', email: 'david.s@example.com', avatar: 'https://picsum.photos/seed/david/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-3', 'grp-4'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3', 'PRJ-4'], lastActive: '10 mins ago' },
+  { id: 'usr-6', name: 'Eve Davis', email: 'eve.d@example.com', avatar: 'https://picsum.photos/seed/eve/100/100', roleId: 'role-3', status: 'Active', groupIds: ['grp-1'], projectIds: ['PRJ-1', 'PRJ-2'], lastActive: '3 hours ago' },
+  { id: 'usr-7', name: 'Frank Miller', email: 'frank.m@example.com', avatar: 'https://picsum.photos/seed/frank/100/100', roleId: 'role-5', status: 'Active', groupIds: [], projectIds: ['PRJ-1'], lastActive: '1 month ago' },
+  { id: 'usr-8', name: 'Grace Wilson', email: 'grace.w@example.com', avatar: 'https://picsum.photos/seed/grace/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-2'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3'], lastActive: '1 hour ago' },
+  { id: 'usr-9', name: 'Heidi Moore', email: 'heidi.m@example.com', avatar: 'https://picsum.photos/seed/heidi/100/100', roleId: 'role-2', status: 'Active', groupIds: ['grp-1', 'grp-3', 'grp-5'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3', 'PRJ-4', 'PRJ-5'], lastActive: 'Just now' },
+  { id: 'usr-10', name: 'Ivan Taylor', email: 'ivan.t@example.com', avatar: 'https://picsum.photos/seed/ivan/100/100', roleId: 'role-3', status: 'Inactive', groupIds: [], projectIds: [], lastActive: '3 months ago' },
+  { id: 'usr-11', name: 'Judy Anderson', email: 'judy.a@example.com', avatar: 'https://picsum.photos/seed/judy/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-4'], projectIds: ['PRJ-1', 'PRJ-2'], lastActive: '4 hours ago' },
+  { id: 'usr-12', name: 'Kevin Thomas', email: 'kevin.t@example.com', avatar: 'https://picsum.photos/seed/kevin/100/100', roleId: 'role-3', status: 'Active', groupIds: ['grp-2', 'grp-5'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3'], lastActive: '2 days ago' },
+  { id: 'usr-13', name: 'Laura Jackson', email: 'laura.j@example.com', avatar: 'https://picsum.photos/seed/laura/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-3'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3', 'PRJ-4'], lastActive: '15 mins ago' },
+  { id: 'usr-14', name: 'Mike White', email: 'mike.w@example.com', avatar: 'https://picsum.photos/seed/mike/100/100', roleId: 'role-5', status: 'Active', groupIds: [], projectIds: ['PRJ-1'], lastActive: '1 week ago' },
+  { id: 'usr-15', name: 'Nina Harris', email: 'nina.h@example.com', avatar: 'https://picsum.photos/seed/nina/100/100', roleId: 'role-3', status: 'Active', groupIds: ['grp-4'], projectIds: ['PRJ-1', 'PRJ-2'], lastActive: '6 hours ago' },
+  { id: 'usr-16', name: 'Oscar Martin', email: 'oscar.m@example.com', avatar: 'https://picsum.photos/seed/oscar/100/100', roleId: 'role-2', status: 'Active', groupIds: ['grp-1', 'grp-2'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3', 'PRJ-4'], lastActive: '1 hour ago' },
+  { id: 'usr-17', name: 'Peggy Thompson', email: 'peggy.t@example.com', avatar: 'https://picsum.photos/seed/peggy/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-3'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3'], lastActive: '30 mins ago' },
+  { id: 'usr-18', name: 'Quinn Garcia', email: 'quinn.g@example.com', avatar: 'https://picsum.photos/seed/quinn/100/100', roleId: 'role-3', status: 'Inactive', groupIds: [], projectIds: ['PRJ-1'], lastActive: '2 months ago' },
+  { id: 'usr-19', name: 'Romeo Martinez', email: 'romeo.m@example.com', avatar: 'https://picsum.photos/seed/romeo/100/100', roleId: 'role-4', status: 'Active', groupIds: ['grp-4'], projectIds: ['PRJ-1', 'PRJ-2'], lastActive: '5 days ago' },
+  { id: 'usr-20', name: 'Sybil Robinson', email: 'sybil.r@example.com', avatar: 'https://picsum.photos/seed/sybil/100/100', roleId: 'role-5', status: 'Active', groupIds: ['grp-5'], projectIds: ['PRJ-1'], lastActive: '1 day ago' },
 ];
 
 const initialGroups: Group[] = [
-  { id: 'grp-1', name: 'Frontend Team', description: 'QA engineers focusing on frontend testing.', users: 5, projects: 2 },
-  { id: 'grp-2', name: 'Backend Team', description: 'QA engineers focusing on API and backend testing.', users: 4, projects: 3 },
-  { id: 'grp-3', name: 'Mobile Team', description: 'QA engineers focusing on iOS and Android apps.', users: 6, projects: 4 },
+  { id: 'grp-1', name: 'Frontend Team', description: 'QA engineers focusing on frontend testing.', userIds: ['usr-1', 'usr-2', 'usr-6', 'usr-9', 'usr-16'], projectIds: ['PRJ-1', 'PRJ-2'] },
+  { id: 'grp-2', name: 'Backend Team', description: 'QA engineers focusing on API and backend testing.', userIds: ['usr-1', 'usr-3', 'usr-8', 'usr-12', 'usr-16'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3'] },
+  { id: 'grp-3', name: 'Mobile Team', description: 'QA engineers focusing on iOS and Android apps.', userIds: ['usr-5', 'usr-9', 'usr-13', 'usr-17'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3', 'PRJ-4'] },
+  { id: 'grp-4', name: 'QA Automation', description: 'Engineers building and maintaining automated test suites.', userIds: ['usr-5', 'usr-11', 'usr-15', 'usr-19'], projectIds: ['PRJ-1', 'PRJ-2', 'PRJ-3', 'PRJ-4', 'PRJ-5'] },
+  { id: 'grp-5', name: 'Security Team', description: 'Specialists focusing on penetration testing and security audits.', userIds: ['usr-9', 'usr-12', 'usr-20'], projectIds: ['PRJ-1', 'PRJ-2'] },
 ];
 
 const initialMilestones: Milestone[] = [
@@ -319,19 +292,6 @@ const initialTestPlans: TestPlan[] = [
   { id: 'tp-2', projectId: 'PRJ-1', name: 'Q2 Master Test Plan', description: 'Master plan for Q2 release', milestoneId: 'ms-2', testRunIds: ['tr-2'], status: 'In Progress' },
 ];
 
-const initialTestCases: TestCase[] = [
-  { id: 'NOBI-1', projectId: 'PRJ-1', title: 'Redirect to Login Page when not authenticated', type: 'Functional', priority: 'Critical', status: 'Untested', reviewStatus: 'Approved', assignee: 'Admin User', directory: 'dir-1' },
-  { id: 'NOBI-2', projectId: 'PRJ-1', title: 'Redirect to Register Page from Login', type: 'Functional', priority: 'High', status: 'Untested', reviewStatus: 'Approved', assignee: 'Admin User', directory: 'dir-1' },
-  { id: 'NOBI-3', projectId: 'PRJ-1', title: 'Redirect to Forgot Password Page from Login', type: 'Functional', priority: 'High', status: 'Untested', reviewStatus: 'Approved', assignee: 'Admin User', directory: 'dir-1' },
-  { id: 'NOBI-4', projectId: 'PRJ-1', title: 'login Test #1', type: 'Functional', priority: 'Critical', status: 'Untested', reviewStatus: 'Draft', assignee: 'Admin User', directory: 'dir-5' },
-  { id: 'NOBI-5', projectId: 'PRJ-1', title: 'login Test #2', type: 'Functional', priority: 'High', status: 'Untested', reviewStatus: 'In Review', assignee: 'Admin User', directory: 'dir-5' },
-  { id: 'NOBI-6', projectId: 'PRJ-1', title: 'login Test #3', type: 'Functional', priority: 'Medium', status: 'Untested', reviewStatus: 'Approved', assignee: 'Admin User', directory: 'dir-5' },
-  { id: 'NOBI-7', projectId: 'PRJ-1', title: 'login Test #4', type: 'Functional', priority: 'Low', status: 'Untested', reviewStatus: 'Need Update', assignee: 'Admin User', directory: 'dir-5' },
-  { id: 'NOBI-8', projectId: 'PRJ-1', title: 'login Test #5', type: 'Functional', priority: 'Critical', status: 'Untested', reviewStatus: 'Draft', assignee: 'Admin User', directory: 'dir-5' },
-  { id: 'NOBI-9', projectId: 'PRJ-1', title: 'login Test #6', type: 'Functional', priority: 'High', status: 'Untested', reviewStatus: 'In Review', assignee: 'Admin User', directory: 'dir-5' },
-  { id: 'NOBI-10', projectId: 'PRJ-1', title: 'login Test #7', type: 'Functional', priority: 'Medium', status: 'Untested', reviewStatus: 'Approved', assignee: 'Admin User', directory: 'dir-5' },
-];
-
 const initialDefects: Defect[] = [
   { id: 'DEF-1', projectId: 'PRJ-1', title: 'Login fails with special characters in password', description: 'When using @ or # in password, login fails even if correct.', status: 'Open', severity: 'High', assigneeId: 'u1', testRunId: 'tr-1', testCaseId: 'NDK-2' },
 ];
@@ -341,17 +301,19 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Helper to get data from localStorage or initialize it
 const getStoredData = <T>(key: string, initialData: T): T => {
-  const stored = localStorage.getItem(key);
+  const versionedKey = `${key}_v2`;
+  const stored = localStorage.getItem(versionedKey);
   if (stored) {
     return JSON.parse(stored);
   }
-  localStorage.setItem(key, JSON.stringify(initialData));
+  localStorage.setItem(versionedKey, JSON.stringify(initialData));
   return initialData;
 };
 
 // Helper to set data to localStorage
 const setStoredData = <T>(key: string, data: T): void => {
-  localStorage.setItem(key, JSON.stringify(data));
+  const versionedKey = `${key}_v2`;
+  localStorage.setItem(versionedKey, JSON.stringify(data));
 };
 
 // Mock API Service
@@ -390,169 +352,169 @@ export const mockApi = {
   // Case Fields
   getCaseFields: async (): Promise<CaseField[]> => {
     await delay(500);
-    return getStoredData('mock_caseFields', initialCaseFields);
+    return getStoredData('mock_caseFields_v2', initialCaseFields);
   },
   addCaseField: async (field: Omit<CaseField, 'id'>): Promise<CaseField> => {
     await delay(500);
-    const fields = getStoredData('mock_caseFields', initialCaseFields);
+    const fields = getStoredData('mock_caseFields_v2', initialCaseFields);
     const newField: CaseField = { ...field, id: Math.random().toString(36).substring(2, 9) };
-    setStoredData('mock_caseFields', [...fields, newField]);
+    setStoredData('mock_caseFields_v2', [...fields, newField]);
     return newField;
   },
   updateCaseField: async (id: string, field: Partial<CaseField>): Promise<CaseField> => {
     await delay(500);
-    const fields = getStoredData('mock_caseFields', initialCaseFields);
+    const fields = getStoredData('mock_caseFields_v2', initialCaseFields);
     const index = fields.findIndex(f => f.id === id);
     if (index === -1) throw new Error('Case Field not found');
     const updatedField = { ...fields[index], ...field };
     fields[index] = updatedField;
-    setStoredData('mock_caseFields', fields);
+    setStoredData('mock_caseFields_v2', fields);
     return updatedField;
   },
   deleteCaseField: async (id: string): Promise<void> => {
     await delay(500);
-    const fields = getStoredData('mock_caseFields', initialCaseFields);
-    setStoredData('mock_caseFields', fields.filter(f => f.id !== id));
+    const fields = getStoredData('mock_caseFields_v2', initialCaseFields);
+    setStoredData('mock_caseFields_v2', fields.filter(f => f.id !== id));
   },
 
   // Test Step Templates
   getTestStepTemplates: async (): Promise<TestStepTemplate[]> => {
     await delay(500);
-    return getStoredData('mock_testStepTemplates', initialTestStepTemplates);
+    return getStoredData('mock_testStepTemplates_v2', initialTestStepTemplates);
   },
   addTestStepTemplate: async (template: Omit<TestStepTemplate, 'id'>): Promise<TestStepTemplate> => {
     await delay(500);
-    const templates = getStoredData('mock_testStepTemplates', initialTestStepTemplates);
+    const templates = getStoredData('mock_testStepTemplates_v2', initialTestStepTemplates);
     const newTemplate: TestStepTemplate = { ...template, id: Math.random().toString(36).substring(2, 9) };
-    setStoredData('mock_testStepTemplates', [...templates, newTemplate]);
+    setStoredData('mock_testStepTemplates_v2', [...templates, newTemplate]);
     return newTemplate;
   },
   updateTestStepTemplate: async (id: string, template: Partial<TestStepTemplate>): Promise<TestStepTemplate> => {
     await delay(500);
-    const templates = getStoredData('mock_testStepTemplates', initialTestStepTemplates);
+    const templates = getStoredData('mock_testStepTemplates_v2', initialTestStepTemplates);
     const index = templates.findIndex(t => t.id === id);
     if (index === -1) throw new Error('Test Step Template not found');
     const updatedTemplate = { ...templates[index], ...template };
     templates[index] = updatedTemplate;
-    setStoredData('mock_testStepTemplates', templates);
+    setStoredData('mock_testStepTemplates_v2', templates);
     return updatedTemplate;
   },
   deleteTestStepTemplate: async (id: string): Promise<void> => {
     await delay(500);
-    const templates = getStoredData('mock_testStepTemplates', initialTestStepTemplates);
-    setStoredData('mock_testStepTemplates', templates.filter(t => t.id !== id));
+    const templates = getStoredData('mock_testStepTemplates_v2', initialTestStepTemplates);
+    setStoredData('mock_testStepTemplates_v2', templates.filter(t => t.id !== id));
   },
 
   // Test Case Templates
   getTestCaseTemplates: async (): Promise<TestCaseTemplate[]> => {
     await delay(500);
-    return getStoredData('mock_testCaseTemplates', initialTestCaseTemplates);
+    return getStoredData('mock_testCaseTemplates_v3', initialTestCaseTemplates);
   },
   addTestCaseTemplate: async (template: Omit<TestCaseTemplate, 'id'>): Promise<TestCaseTemplate> => {
     await delay(500);
-    const templates = getStoredData('mock_testCaseTemplates', initialTestCaseTemplates);
+    const templates = getStoredData('mock_testCaseTemplates_v3', initialTestCaseTemplates);
     const newTemplate: TestCaseTemplate = { ...template, id: Math.random().toString(36).substring(2, 9) };
-    setStoredData('mock_testCaseTemplates', [...templates, newTemplate]);
+    setStoredData('mock_testCaseTemplates_v3', [...templates, newTemplate]);
     return newTemplate;
   },
   updateTestCaseTemplate: async (id: string, template: Partial<TestCaseTemplate>): Promise<TestCaseTemplate> => {
     await delay(500);
-    const templates = getStoredData('mock_testCaseTemplates', initialTestCaseTemplates);
+    const templates = getStoredData('mock_testCaseTemplates_v3', initialTestCaseTemplates);
     const index = templates.findIndex(t => t.id === id);
     if (index === -1) throw new Error('Test Case Template not found');
     const updatedTemplate = { ...templates[index], ...template };
     templates[index] = updatedTemplate;
-    setStoredData('mock_testCaseTemplates', templates);
+    setStoredData('mock_testCaseTemplates_v3', templates);
     return updatedTemplate;
   },
   deleteTestCaseTemplate: async (id: string): Promise<void> => {
     await delay(500);
-    const templates = getStoredData('mock_testCaseTemplates', initialTestCaseTemplates);
-    setStoredData('mock_testCaseTemplates', templates.filter(t => t.id !== id));
+    const templates = getStoredData('mock_testCaseTemplates_v3', initialTestCaseTemplates);
+    setStoredData('mock_testCaseTemplates_v3', templates.filter(t => t.id !== id));
   },
 
   // Roles
   getRoles: async (): Promise<Role[]> => {
     await delay(500);
-    return getStoredData('mock_roles', initialRoles);
+    return getStoredData('mock_roles_v3', initialRoles);
   },
   addRole: async (role: Omit<Role, 'id'>): Promise<Role> => {
     await delay(500);
-    const roles = getStoredData('mock_roles', initialRoles);
+    const roles = getStoredData('mock_roles_v3', initialRoles);
     const newRole: Role = { ...role, id: Math.random().toString(36).substring(2, 9) };
-    setStoredData('mock_roles', [...roles, newRole]);
+    setStoredData('mock_roles_v3', [...roles, newRole]);
     return newRole;
   },
   updateRole: async (id: string, role: Partial<Role>): Promise<Role> => {
     await delay(500);
-    const roles = getStoredData('mock_roles', initialRoles);
+    const roles = getStoredData('mock_roles_v3', initialRoles);
     const index = roles.findIndex(r => r.id === id);
     if (index === -1) throw new Error('Role not found');
     const updatedRole = { ...roles[index], ...role };
     roles[index] = updatedRole;
-    setStoredData('mock_roles', roles);
+    setStoredData('mock_roles_v3', roles);
     return updatedRole;
   },
   deleteRole: async (id: string): Promise<void> => {
     await delay(500);
-    const roles = getStoredData('mock_roles', initialRoles);
-    setStoredData('mock_roles', roles.filter(r => r.id !== id));
+    const roles = getStoredData('mock_roles_v3', initialRoles);
+    setStoredData('mock_roles_v3', roles.filter(r => r.id !== id));
   },
 
   // Users
   getUsers: async (): Promise<User[]> => {
     await delay(500);
-    return getStoredData('mock_users', initialUsers);
+    return getStoredData('mock_users_v3', initialUsers);
   },
   addUser: async (user: Omit<User, 'id' | 'lastActive'>): Promise<User> => {
     await delay(500);
-    const users = getStoredData('mock_users', initialUsers);
+    const users = getStoredData('mock_users_v3', initialUsers);
     const newUser: User = { ...user, id: Math.random().toString(36).substring(2, 9), lastActive: 'Just now' };
-    setStoredData('mock_users', [...users, newUser]);
+    setStoredData('mock_users_v3', [...users, newUser]);
     return newUser;
   },
   updateUser: async (id: string, user: Partial<User>): Promise<User> => {
     await delay(500);
-    const users = getStoredData('mock_users', initialUsers);
+    const users = getStoredData('mock_users_v3', initialUsers);
     const index = users.findIndex(u => u.id === id);
     if (index === -1) throw new Error('User not found');
     const updatedUser = { ...users[index], ...user };
     users[index] = updatedUser;
-    setStoredData('mock_users', users);
+    setStoredData('mock_users_v3', users);
     return updatedUser;
   },
   deleteUser: async (id: string): Promise<void> => {
     await delay(500);
-    const users = getStoredData('mock_users', initialUsers);
-    setStoredData('mock_users', users.filter(u => u.id !== id));
+    const users = getStoredData('mock_users_v3', initialUsers);
+    setStoredData('mock_users_v3', users.filter(u => u.id !== id));
   },
 
   // Groups
   getGroups: async (): Promise<Group[]> => {
     await delay(500);
-    return getStoredData('mock_groups', initialGroups);
+    return getStoredData('mock_groups_v3', initialGroups);
   },
   addGroup: async (group: Omit<Group, 'id'>): Promise<Group> => {
     await delay(500);
-    const groups = getStoredData('mock_groups', initialGroups);
+    const groups = getStoredData('mock_groups_v3', initialGroups);
     const newGroup: Group = { ...group, id: Math.random().toString(36).substring(2, 9) };
-    setStoredData('mock_groups', [...groups, newGroup]);
+    setStoredData('mock_groups_v3', [...groups, newGroup]);
     return newGroup;
   },
   updateGroup: async (id: string, group: Partial<Group>): Promise<Group> => {
     await delay(500);
-    const groups = getStoredData('mock_groups', initialGroups);
+    const groups = getStoredData('mock_groups_v3', initialGroups);
     const index = groups.findIndex(g => g.id === id);
     if (index === -1) throw new Error('Group not found');
     const updatedGroup = { ...groups[index], ...group };
     groups[index] = updatedGroup;
-    setStoredData('mock_groups', groups);
+    setStoredData('mock_groups_v3', groups);
     return updatedGroup;
   },
   deleteGroup: async (id: string): Promise<void> => {
     await delay(500);
-    const groups = getStoredData('mock_groups', initialGroups);
-    setStoredData('mock_groups', groups.filter(g => g.id !== id));
+    const groups = getStoredData('mock_groups_v3', initialGroups);
+    setStoredData('mock_groups_v3', groups.filter(g => g.id !== id));
   },
 
   // Milestones
@@ -715,5 +677,35 @@ export const mockApi = {
     await delay(500);
     const defects = getStoredData('mock_defects', initialDefects);
     setStoredData('mock_defects', defects.filter(d => d.id !== id));
+  },
+
+  // Directories
+  getDirectories: async (projectId: string): Promise<Directory[]> => {
+    await delay(500);
+    const directories = getStoredData('mock_directories', initialDirectories);
+    return directories.filter(d => d.projectId === projectId);
+  },
+  addDirectory: async (directory: Omit<Directory, 'id'>): Promise<Directory> => {
+    await delay(500);
+    const directories = getStoredData('mock_directories', initialDirectories);
+    const newId = `dir-${Date.now().toString().slice(-4)}`;
+    const newDirectory = { ...directory, id: newId };
+    setStoredData('mock_directories', [...directories, newDirectory]);
+    return newDirectory;
+  },
+  updateDirectory: async (id: string, directory: Partial<Directory>): Promise<Directory> => {
+    await delay(500);
+    const directories = getStoredData('mock_directories', initialDirectories);
+    const index = directories.findIndex(d => d.id === id);
+    if (index === -1) throw new Error('Directory not found');
+    const updatedDirectory = { ...directories[index], ...directory };
+    directories[index] = updatedDirectory;
+    setStoredData('mock_directories', directories);
+    return updatedDirectory;
+  },
+  deleteDirectory: async (id: string): Promise<void> => {
+    await delay(500);
+    const directories = getStoredData('mock_directories', initialDirectories);
+    setStoredData('mock_directories', directories.filter(d => d.id !== id && d.parentId !== id));
   },
 };

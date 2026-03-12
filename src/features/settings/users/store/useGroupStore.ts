@@ -5,8 +5,8 @@ export interface Group {
   id: string;
   name: string;
   description: string;
-  users: number;
-  projects: number;
+  userIds: string[];
+  projectIds: string[];
 }
 
 interface GroupState {

@@ -1,6 +1,7 @@
 import { User } from '@/features/settings/users/store/useUserStore';
 import { useGroupStore } from '@/features/settings/users/store/useGroupStore';
 import { useProjectStore } from '@/features/projects/store/useProjectStore';
+import { useRoleStore } from '@/features/settings/users/store/useRoleStore';
 import { Users, FolderKanban, Activity } from 'lucide-react';
 import { SidePanel } from '@/components/ui/SidePanel';
 
@@ -25,8 +26,11 @@ export function UserSidePanel({ isOpen, onClose, user }: UserSidePanelProps) {
   const { groups } = useGroupStore();
   const { projects } = useProjectStore();
 
-  const userGroups = user ? groups.slice(0, user.groups) : [];
-  const userProjects = user ? projects.slice(0, user.projects) : [];
+  const { roles } = useRoleStore();
+
+  const userGroups = user ? groups.filter(g => user.groupIds.includes(g.id)) : [];
+  const userProjects = user ? projects.filter(p => user.projectIds.includes(p.id)) : [];
+  const userRole = user ? roles.find(r => r.id === user.roleId)?.name || 'Unknown' : 'Unknown';
 
   return (
     <SidePanel 
@@ -65,7 +69,7 @@ export function UserSidePanel({ isOpen, onClose, user }: UserSidePanelProps) {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-text-muted">Role</span>
-                <span className="font-medium text-text">{user.role}</span>
+                <span className="font-medium text-text">{userRole}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-text-muted">Last Active</span>
@@ -85,7 +89,7 @@ export function UserSidePanel({ isOpen, onClose, user }: UserSidePanelProps) {
                     <Users className="w-4 h-4 text-text-muted" />
                     Groups
                   </div>
-                  <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">{user.groups}</span>
+                  <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">{user.groupIds.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {userGroups.length > 0 ? userGroups.map(g => (
@@ -103,7 +107,7 @@ export function UserSidePanel({ isOpen, onClose, user }: UserSidePanelProps) {
                     <FolderKanban className="w-4 h-4 text-text-muted" />
                     Projects
                   </div>
-                  <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">{user.projects}</span>
+                  <span className="text-xs font-semibold bg-surface px-2 py-0.5 rounded-full border border-border">{user.projectIds.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {userProjects.length > 0 ? userProjects.map(p => (

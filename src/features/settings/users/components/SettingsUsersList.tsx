@@ -449,7 +449,7 @@ export function SettingsUsersList() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-text">{user.role}</td>
+                        <td className="px-4 py-3 text-text">{roles.find(r => r.id === user.roleId)?.name || 'Unknown'}</td>
                         <td className="px-4 py-3">
                           <Badge
                             variant={
@@ -461,10 +461,10 @@ export function SettingsUsersList() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-center text-text-muted">
-                          {user.groups}
+                          {user.groupIds.length}
                         </td>
                         <td className="px-4 py-3 text-center text-text-muted">
-                          {user.projects}
+                          {user.projectIds.length}
                         </td>
                         <td className="px-4 py-3 text-text-muted">
                           {user.lastActive}
@@ -703,10 +703,10 @@ export function SettingsUsersList() {
                           {group.description}
                         </td>
                         <td className="px-4 py-3 text-center text-text-muted">
-                          {group.users}
+                          {group.userIds.length}
                         </td>
                         <td className="px-4 py-3 text-center text-text-muted">
-                          {group.projects}
+                          {group.projectIds.length}
                         </td>
                         <td className="px-4 py-3 text-center relative">
                           <button
@@ -928,7 +928,7 @@ export function SettingsUsersList() {
                           {role.description}
                         </td>
                         <td className="px-4 py-3 text-center text-text-muted">
-                          {role.users}
+                          {role.userIds.length}
                         </td>
                         <td className="px-4 py-3 text-center relative">
                           <button

@@ -52,7 +52,19 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       setDirectory(testCase.directory || '');
       setPriority(testCase.priority);
       setType(testCase.type);
-      setCustomFields(testCase.customFields || {});
+      
+      // Map legacy fields to custom fields if they don't exist
+      const initialCustomFields = { ...testCase.customFields };
+      if (!initialCustomFields['cf1'] && !initialCustomFields['cf2']) {
+        if (template?.fields.some(f => f.id === 'cf1')) initialCustomFields['cf1'] = testCase.type;
+        if (template?.fields.some(f => f.id === 'cf2')) initialCustomFields['cf2'] = testCase.type;
+      }
+      if (!initialCustomFields['cf5'] && !initialCustomFields['cf6']) {
+        if (template?.fields.some(f => f.id === 'cf5')) initialCustomFields['cf5'] = testCase.priority;
+        if (template?.fields.some(f => f.id === 'cf6')) initialCustomFields['cf6'] = testCase.priority;
+      }
+      
+      setCustomFields(initialCustomFields);
     } else {
       setTitle('');
       setDirectory('');
@@ -60,7 +72,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       setType('Functional');
       setCustomFields({});
     }
-  }, [testCase, isOpen]);
+  }, [testCase, isOpen, template]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,8 +80,8 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       projectId,
       title,
       directory: directory || 'Uncategorized',
-      priority,
-      type,
+      priority: customFields['cf5'] || customFields['cf6'] || priority,
+      type: customFields['cf1'] || customFields['cf2'] || type,
       status: testCase?.status || 'Untested',
       customFields,
     };

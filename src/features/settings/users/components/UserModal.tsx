@@ -24,7 +24,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'Tester',
+    roleId: 'role-4', // Default to Tester
     selectedGroups: [] as string[],
     selectedProjects: [] as string[],
   });
@@ -39,9 +39,9 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
       setFormData({
         name: user.name,
         email: user.email,
-        role: user.role,
-        selectedGroups: [],
-        selectedProjects: [],
+        roleId: user.roleId,
+        selectedGroups: user.groupIds || [],
+        selectedProjects: user.projectIds || [],
       });
       setInviteMethod('email');
       setPassword('');
@@ -51,7 +51,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
       setFormData({
         name: '',
         email: '',
-        role: 'Tester',
+        roleId: 'role-4',
         selectedGroups: [],
         selectedProjects: [],
       });
@@ -81,19 +81,19 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
       updateUser(user.id, {
         name: formData.name,
         email: formData.email,
-        role: formData.role,
-        groups: formData.selectedGroups.length || user.groups,
-        projects: formData.selectedProjects.length || user.projects,
+        roleId: formData.roleId,
+        groupIds: formData.selectedGroups,
+        projectIds: formData.selectedProjects,
       });
     } else {
       addUser({
         name: formData.name,
         email: formData.email,
-        role: formData.role,
+        roleId: formData.roleId,
         avatar: `https://picsum.photos/seed/${formData.name.replace(/\s/g, '')}/100/100`,
         status: 'Active',
-        groups: formData.selectedGroups.length,
-        projects: formData.selectedProjects.length,
+        groupIds: formData.selectedGroups,
+        projectIds: formData.selectedProjects,
       });
     }
     onClose();
@@ -117,7 +117,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
     }));
   };
 
-  const showGroupsAndProjects = formData.role !== 'Admin';
+  const showGroupsAndProjects = formData.roleId !== 'role-1';
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
   const passwordValid = password.length >= 6;
 
@@ -194,16 +194,16 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
           <div className="relative">
             <select
               id="role"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              value={formData.roleId}
+              onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
               required
               className="w-full appearance-none rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-text shadow-sm transition-all hover:bg-surface-hover focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              <option value="Admin">Admin - Full access to all projects and settings</option>
-              <option value="Lead">Lead - Can manage projects and users within their groups</option>
-              <option value="Developer">Developer - Can execute tests and manage defects</option>
-              <option value="Tester">Tester - Can execute tests and report defects</option>
-              <option value="Guest">Guest - Read-only access to assigned projects</option>
+              <option value="role-1">Admin - Full access to all projects and settings</option>
+              <option value="role-2">Lead - Can manage projects and users within their groups</option>
+              <option value="role-3">Developer - Can execute tests and manage defects</option>
+              <option value="role-4">Tester - Can execute tests and report defects</option>
+              <option value="role-5">Guest - Read-only access to assigned projects</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-text-muted">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
