@@ -1,8 +1,15 @@
+import { useMemo } from "react";
 import { TestCase } from "../store/useTestCaseStore";
 import { SidePanel } from "@/components/ui/SidePanel";
 import { FileText, Activity, Folder, AlertCircle, User, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/utils/cn";
+import { useProjectStore } from "../store/useProjectStore";
+import { useDirectoryStore } from "../store/useDirectoryStore";
+import { useCustomizationStore } from "@/features/settings/customizations/store/useCustomizationStore";
+import { useUserStore } from "@/features/settings/users/store/useUserStore";
+import { useGroupStore } from "@/features/settings/users/store/useGroupStore";
+import { reconstructSections } from "@/features/settings/customizations/utils/sectionUtils";
 
 interface TestCaseSidePanelProps {
   isOpen: boolean;
@@ -17,12 +24,38 @@ const MOCK_ACTIVITIES = [
 ];
 
 export function TestCaseSidePanel({ isOpen, onClose, testCase }: TestCaseSidePanelProps) {
+  const { projects } = useProjectStore();
+  const { directories } = useDirectoryStore();
+  const { caseFields, testCaseTemplates } = useCustomizationStore();
+  const { users } = useUserStore();
+  const { groups } = useGroupStore();
+
+  const project = useMemo(() => {
+    if (!testCase) return null;
+    return projects.find(p => p.id === testCase.projectId);
+  }, [testCase, projects]);
+
+  const template = useMemo(() => {
+    if (!project?.test_case_templates?.id) return null;
+    return testCaseTemplates.find(t => t.id === project.test_case_templates.id);
+  }, [project, testCaseTemplates]);
+
+  const sections = useMemo(() => {
+    return template ? reconstructSections(template.fields) : [];
+  }, [template]);
+
+  const directoryName = useMemo(() => {
+    if (!testCase?.directory) return 'Unassigned';
+    const dir = directories.find(d => d.id === testCase.directory);
+    return dir ? dir.name : testCase.directory;
+  }, [testCase, directories]);
+
   return (
     <SidePanel
       isOpen={isOpen && !!testCase}
       onClose={onClose}
       title="Test Case Details"
-      defaultWidth={420}
+      defaultWidth={600}
     >
       {testCase && (
         <>
@@ -67,44 +100,88 @@ export function TestCaseSidePanel({ isOpen, onClose, testCase }: TestCaseSidePan
           </div>
 
           {/* Details */}
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-text mb-4">
-              Information
-            </h3>
-            <div className="space-y-3 text-sm bg-background rounded-xl border border-border p-4">
-              <div className="flex justify-between items-center">
-                <span className="text-text-muted flex items-center gap-2"><Folder className="w-4 h-4" /> Directory</span>
-                <span className="font-medium text-text">{testCase.directory}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-text-muted flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Type</span>
-                <span className="font-medium text-text">{testCase.type}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-text-muted flex items-center gap-2"><User className="w-4 h-4" /> Assignee</span>
-                <span className="font-medium text-text">{testCase.assignee || 'Unassigned'}</span>
-              </div>
-            </div>
-          </div>
+          <div className="mb-8 space-y-6">
+            {sections.length > 0 ? sections.map(section => (
+              <div key={section.id} className="grid gap-6 bg-background rounded-xl border border-border p-5" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }}>
+                {section.fields.map((fieldId, index) => {
+                  if (!fieldId) {
+                    return <div key={index} className="min-h-[60px]" />;
+                  }
 
-          {/* Custom Fields (if any) */}
-          {testCase.customFields && Object.keys(testCase.customFields).length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-sm font-semibold text-text mb-4">
-                Custom Fields
-              </h3>
-              <div className="space-y-3 text-sm bg-background rounded-xl border border-border p-4">
-                {Object.entries(testCase.customFields).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-start">
-                    <span className="text-text-muted capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                    <span className="font-medium text-text text-right max-w-[60%] whitespace-pre-wrap">
-                      {String(value)}
-                    </span>
-                  </div>
-                ))}
+                  if (fieldId === 'title') {
+                    return (
+                      <div key={`${section.id}-${index}`}>
+                        <label className="block text-sm font-medium text-text-muted mb-1">Title</label>
+                        <div className="font-medium text-text">{testCase.title}</div>
+                      </div>
+                    );
+                  }
+
+                  if (fieldId === 'directory') {
+                    return (
+                      <div key={`${section.id}-${index}`}>
+                        <label className="block text-sm font-medium text-text-muted mb-1">Directory</label>
+                        <div className="font-medium text-text flex items-center gap-2">
+                          <Folder className="w-4 h-4 text-text-muted" />
+                          {directoryName}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const fieldConfig = caseFields.find(cf => cf.id === fieldId);
+                  if (!fieldConfig) return <div key={index} className="min-h-[60px]" />;
+
+                  let displayValue: React.ReactNode = '-';
+                  const rawValue = testCase.customFields?.[fieldId];
+
+                  if (fieldConfig.type === 'User') {
+                    const user = users.find(u => u.id === rawValue);
+                    displayValue = user ? (
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-text-muted" />
+                        {user.name}
+                      </div>
+                    ) : (rawValue || '-');
+                  } else if (fieldConfig.type === 'Group') {
+                    const group = groups.find(g => g.id === rawValue);
+                    displayValue = group ? group.name : (rawValue || '-');
+                  } else if (fieldConfig.type === 'Checkbox') {
+                    displayValue = rawValue ? 'Yes' : 'No';
+                  } else if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+                    displayValue = String(rawValue);
+                  }
+
+                  return (
+                    <div key={`${section.id}-${index}`}>
+                      <label className="block text-sm font-medium text-text-muted mb-1">
+                        {fieldConfig.name}
+                      </label>
+                      <div className="font-medium text-text whitespace-pre-wrap">
+                        {displayValue}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          )}
+            )) : (
+              // Fallback if no template
+              <div className="space-y-3 text-sm bg-background rounded-xl border border-border p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-text-muted flex items-center gap-2"><Folder className="w-4 h-4" /> Directory</span>
+                  <span className="font-medium text-text">{directoryName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-muted flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Type</span>
+                  <span className="font-medium text-text">{testCase.type}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-muted flex items-center gap-2"><User className="w-4 h-4" /> Assignee</span>
+                  <span className="font-medium text-text">{testCase.assignee || 'Unassigned'}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Recent Activity */}
           <div>

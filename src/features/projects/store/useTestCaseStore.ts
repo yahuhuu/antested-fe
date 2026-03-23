@@ -13,7 +13,8 @@ export interface TestCase {
   directory: string; // Suite or folder
   // Dynamic fields will be stored here
   customFields?: Record<string, any>;
-  steps?: any[];
+  testStepTemplateId?: string;
+  testStepsData?: Record<string, any>;
 }
 
 interface TestCaseState {

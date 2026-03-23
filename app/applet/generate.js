@@ -21,6 +21,15 @@ const generatedDirectories = [];
 
 let prjIdCounter = 1;
 
+const templateMap = {
+  'Behaviour Driven Development': '1',
+  'Test Step (single Steps)': '2',
+  'Test Step (multiple Steps)': '3',
+  'Test Step (multiple Steps with test data)': '4',
+  'Exploratory Sessions': '5',
+  'Default Template': '6'
+};
+
 projectsData.forEach(p => {
   const prjId = `PRJ-${prjIdCounter++}`;
   
@@ -98,7 +107,7 @@ projectsData.forEach(p => {
       status: { failed: 4, in_progress: 3, fixed: 2, in_testing: 1 }
     },
     test_case_templates: {
-      id: p.template.toLowerCase().replace(/\s+/g, '-'),
+      id: templateMap[p.template] || '1',
       name: p.template,
       description: `Template for ${p.template}`
     },

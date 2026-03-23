@@ -123,7 +123,7 @@ export function TestRunModal({ isOpen, onClose, testRun, projectId }: TestRunMod
             <Select
               id="milestoneId"
               value={formData.milestoneId}
-              onChange={(e) => setFormData({ ...formData, milestoneId: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, milestoneId: value })}
               options={[
                 { value: '', label: 'None' },
                 ...milestones.map(m => ({ value: m.id, label: m.name }))
@@ -138,7 +138,7 @@ export function TestRunModal({ isOpen, onClose, testRun, projectId }: TestRunMod
             <Select
               id="assignedTo"
               value={formData.assignedTo}
-              onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, assignedTo: value })}
               options={[
                 { value: '', label: 'Unassigned' },
                 ...users.map(u => ({ value: u.id, label: u.name }))
@@ -173,7 +173,7 @@ export function TestRunModal({ isOpen, onClose, testRun, projectId }: TestRunMod
               <Select
                 id="status"
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Open' | 'In Progress' | 'Completed' })}
+                onChange={(value) => setFormData({ ...formData, status: value as 'Open' | 'In Progress' | 'Completed' })}
                 options={[
                   { value: 'Open', label: 'Open' },
                   { value: 'In Progress', label: 'In Progress' },

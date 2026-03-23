@@ -2,10 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
+import { Plus, Trash2 } from 'lucide-react';
 import { useTestCaseStore, TestCase } from '../store/useTestCaseStore';
 import { useProjectStore } from '../store/useProjectStore';
 import { useDirectoryStore } from '../store/useDirectoryStore';
 import { useCustomizationStore } from '@/features/settings/customizations/store/useCustomizationStore';
+import { useUserStore } from '@/features/settings/users/store/useUserStore';
+import { useGroupStore } from '@/features/settings/users/store/useGroupStore';
 import { reconstructSections } from '@/features/settings/customizations/utils/sectionUtils';
 
 interface TestCaseModalProps {
@@ -19,7 +23,9 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
   const { addTestCase, updateTestCase } = useTestCaseStore();
   const { projects } = useProjectStore();
   const { directories } = useDirectoryStore();
-  const { testCaseTemplates, caseFields } = useCustomizationStore();
+  const { testCaseTemplates, caseFields, testStepTemplates, fetchCustomizations } = useCustomizationStore();
+  const { users, fetchUsers } = useUserStore();
+  const { groups, fetchGroups } = useGroupStore();
 
   const project = projects.find(p => p.id === projectId);
   const template = testCaseTemplates.find(t => t.id === project?.test_case_templates?.id);
@@ -29,6 +35,8 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
   const [priority, setPriority] = useState('Medium');
   const [type, setType] = useState('Functional');
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
+  const [testStepTemplateId, setTestStepTemplateId] = useState<string>('');
+  const [testStepsData, setTestStepsData] = useState<Record<string, any>>({});
 
   const projectDirs = useMemo(() => directories.filter(d => d.projectId === projectId), [directories, projectId]);
 
@@ -45,6 +53,14 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
     buildTree(null, 0);
     return options;
   }, [projectDirs]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+      fetchGroups();
+      fetchCustomizations();
+    }
+  }, [isOpen, fetchUsers, fetchGroups, fetchCustomizations]);
 
   useEffect(() => {
     if (testCase) {
@@ -65,12 +81,16 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       }
       
       setCustomFields(initialCustomFields);
+      setTestStepTemplateId(testCase.testStepTemplateId || template?.testStepTemplateId || '');
+      setTestStepsData(testCase.testStepsData || {});
     } else {
       setTitle('');
       setDirectory('');
       setPriority('Medium');
       setType('Functional');
       setCustomFields({});
+      setTestStepTemplateId(template?.testStepTemplateId || '');
+      setTestStepsData({});
     }
   }, [testCase, isOpen, template]);
 
@@ -84,6 +104,8 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       type: customFields['cf1'] || customFields['cf2'] || type,
       status: testCase?.status || 'Untested',
       customFields,
+      testStepTemplateId,
+      testStepsData,
     };
 
     if (testCase) {
@@ -94,7 +116,179 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
     onClose();
   };
 
-  const sections = template ? reconstructSections(template.fields) : [];
+  const sections = useMemo(() => {
+    return template ? reconstructSections(template.fields) : [];
+  }, [template]);
+
+  const renderTestStepFields = () => {
+    if (!template) return null;
+
+    let currentTemplateId = testStepTemplateId;
+    
+    // If dynamic, show a dropdown to select the template
+    const isDynamic = template.testStepTemplateMode === 'dynamic';
+
+    return (
+      <div className="space-y-4 mt-6 pt-6 border-t border-border">
+        <h3 className="text-lg font-medium text-text">Test Steps</h3>
+        
+        {isDynamic && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-text mb-1">Select Test Step Template</label>
+            <Select
+              className="bg-background"
+              value={currentTemplateId}
+              onChange={(value) => {
+                setTestStepTemplateId(value);
+                setTestStepsData({}); // Reset data when template changes
+              }}
+              options={testStepTemplates.map(t => ({ value: t.id, label: t.name }))}
+              placeholder="Select template..."
+            />
+          </div>
+        )}
+
+        {currentTemplateId && (() => {
+          const tsTemplate = testStepTemplates.find(t => t.id === currentTemplateId);
+          if (!tsTemplate) return null;
+
+          return (
+            <div className="space-y-6">
+              {tsTemplate.fields.map(field => {
+                if (field.type === 'Repeater' && field.subFields) {
+                  const rows = testStepsData[field.id] || [];
+                  
+                  const addRow = () => {
+                    const newRow = field.subFields!.reduce((acc, sf) => ({ ...acc, [sf.id]: '' }), {});
+                    setTestStepsData({
+                      ...testStepsData,
+                      [field.id]: [...rows, newRow]
+                    });
+                  };
+
+                  const updateRow = (index: number, subFieldId: string, value: string) => {
+                    const newRows = [...rows];
+                    newRows[index] = { ...newRows[index], [subFieldId]: value };
+                    setTestStepsData({
+                      ...testStepsData,
+                      [field.id]: newRows
+                    });
+                  };
+
+                  const removeRow = (index: number) => {
+                    const newRows = rows.filter((_: any, i: number) => i !== index);
+                    setTestStepsData({
+                      ...testStepsData,
+                      [field.id]: newRows
+                    });
+                  };
+
+                  return (
+                    <div key={field.id} className="space-y-2">
+                      <label className="block text-sm font-medium text-text mb-1">{field.name}</label>
+                      <div className="border border-border rounded-md overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-surface border-b border-border text-text-muted">
+                            <tr>
+                              <th className="px-4 py-2 font-medium w-12">#</th>
+                              {field.subFields.map(subField => (
+                                <th key={subField.id} className="px-4 py-2 font-medium">{subField.name}</th>
+                              ))}
+                              <th className="px-4 py-2 font-medium w-16"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {rows.length === 0 && (
+                              <tr className="bg-background">
+                                <td colSpan={field.subFields.length + 2} className="px-4 py-6 text-center text-text-muted">
+                                  No steps added yet. Click "Add Step" to begin.
+                                </td>
+                              </tr>
+                            )}
+                            {rows.map((row: any, index: number) => (
+                              <tr key={index} className="bg-background">
+                                <td className="px-4 py-3 text-text-muted">{index + 1}</td>
+                                {field.subFields!.map(subField => (
+                                  <td key={subField.id} className="px-4 py-3">
+                                    {subField.type === 'Text Area' ? (
+                                      <textarea 
+                                        className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[60px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                                        placeholder={`Enter ${subField.name}`} 
+                                        value={row[subField.id] || ''}
+                                        onChange={(e) => updateRow(index, subField.id, e.target.value)}
+                                      />
+                                    ) : (
+                                      <Input 
+                                        placeholder={`Enter ${subField.name}`} 
+                                        className="bg-background" 
+                                        value={row[subField.id] || ''}
+                                        onChange={(e) => updateRow(index, subField.id, e.target.value)}
+                                      />
+                                    )}
+                                  </td>
+                                ))}
+                                <td className="px-4 py-3 text-center">
+                                  <Button type="button" variant="ghost" size="sm" className="text-text-muted hover:text-destructive" onClick={() => removeRow(index)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" className="mt-2 text-text" onClick={addRow}>
+                        <Plus className="w-4 h-4 mr-2 text-text" /> Add Step
+                      </Button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={field.id}>
+                    <label className="block text-sm font-medium text-text mb-1">{field.name}</label>
+                    {field.type === 'Text Area' ? (
+                      <textarea 
+                        className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[80px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                        placeholder={`Enter ${field.name}`} 
+                        value={testStepsData[field.id] || ''}
+                        onChange={(e) => setTestStepsData({ ...testStepsData, [field.id]: e.target.value })}
+                      />
+                    ) : field.type === 'Checkbox' ? (
+                      <div className="flex items-center gap-2 h-9">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-border text-primary bg-background" 
+                          checked={!!testStepsData[field.id]}
+                          onChange={(e) => setTestStepsData({ ...testStepsData, [field.id]: e.target.checked })}
+                        />
+                        <span className="text-sm text-text">Check to enable</span>
+                      </div>
+                    ) : field.type === 'Dropdown' ? (
+                      <Select
+                        className="bg-background"
+                        value={testStepsData[field.id] || ''}
+                        onChange={(value) => setTestStepsData({ ...testStepsData, [field.id]: value })}
+                        options={[]} // Assuming options are not defined in TestStepField, but if they were, we'd map them here
+                        placeholder="Select option..."
+                      />
+                    ) : (
+                      <Input 
+                        placeholder={`Enter ${field.name}`} 
+                        className="bg-background" 
+                        value={testStepsData[field.id] || ''}
+                        onChange={(e) => setTestStepsData({ ...testStepsData, [field.id]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
+    );
+  };
 
   return (
     <Modal
@@ -102,6 +296,16 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       onClose={onClose}
       title={testCase ? 'Edit Test Case' : 'Create Test Case'}
       className="max-w-4xl"
+      footer={
+        <div className="text-text flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="test-case-form">
+            {testCase ? 'Save Changes' : 'Create Test Case'}
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-6">
         <form id="test-case-form" onSubmit={handleSubmit} className="space-y-6">
@@ -132,18 +336,16 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                     return (
                       <div key={`${section.id}-${index}`}>
                         <label className="block text-sm font-medium text-text mb-1">Directory</label>
-                        <select
-                          className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        <Select
+                          className="bg-background"
                           value={directory}
-                          onChange={(e) => setDirectory(e.target.value)}
-                        >
-                          <option value="">Select directory...</option>
-                          {directoryOptions.map(opt => (
-                            <option key={opt.id} value={opt.id}>
-                              {'\u00A0'.repeat(opt.level * 4)}{opt.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => setDirectory(value)}
+                          options={directoryOptions.map(opt => ({
+                            value: opt.id,
+                            label: `${'\u00A0'.repeat(opt.level * 4)}${opt.name}`
+                          }))}
+                          placeholder="Select directory..."
+                        />
                       </div>
                     );
                   }
@@ -175,17 +377,32 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                           <span className="text-sm text-text">Check to enable</span>
                         </div>
                       ) : fieldConfig.type === 'Dropdown' ? (
-                        <select
-                          className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm text-text shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        <Select
+                          className="bg-background"
                           required={fieldConfig.required}
                           value={customFields[fieldId] || ''}
-                          onChange={(e) => setCustomFields({ ...customFields, [fieldId]: e.target.value })}
-                        >
-                          <option value="">Select option...</option>
-                          {fieldConfig.options?.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => setCustomFields({ ...customFields, [fieldId]: value })}
+                          options={fieldConfig.options?.map(opt => ({ value: opt, label: opt })) || []}
+                          placeholder="Select option..."
+                        />
+                      ) : fieldConfig.type === 'User' ? (
+                        <Select
+                          className="bg-background"
+                          required={fieldConfig.required}
+                          value={customFields[fieldId] || ''}
+                          onChange={(value) => setCustomFields({ ...customFields, [fieldId]: value })}
+                          options={users.map(user => ({ value: user.id, label: user.name }))}
+                          placeholder="Select user..."
+                        />
+                      ) : fieldConfig.type === 'Group' ? (
+                        <Select
+                          className="bg-background"
+                          required={fieldConfig.required}
+                          value={customFields[fieldId] || ''}
+                          onChange={(value) => setCustomFields({ ...customFields, [fieldId]: value })}
+                          options={groups.map(group => ({ value: group.id, label: group.name }))}
+                          placeholder="Select group..."
+                        />
                       ) : (
                         <Input
                           required={fieldConfig.required}
@@ -213,58 +430,51 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-text">Suite / Directory</label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  <Select
+                    className="bg-surface"
                     value={directory}
-                    onChange={(e) => setDirectory(e.target.value)}
-                  >
-                    <option value="">Select directory...</option>
-                    {directoryOptions.map(opt => (
-                      <option key={opt.id} value={opt.id}>
-                        {'\u00A0'.repeat(opt.level * 4)}{opt.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setDirectory(value)}
+                    options={directoryOptions.map(opt => ({
+                      value: opt.id,
+                      label: `${'\u00A0'.repeat(opt.level * 4)}${opt.name}`
+                    }))}
+                    placeholder="Select directory..."
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-text">Priority</label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  <Select
+                    className="bg-surface"
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                  >
-                    <option value="Critical">Critical</option>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
+                    onChange={(value) => setPriority(value)}
+                    options={[
+                      { value: 'Critical', label: 'Critical' },
+                      { value: 'High', label: 'High' },
+                      { value: 'Medium', label: 'Medium' },
+                      { value: 'Low', label: 'Low' }
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-text">Type</label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  <Select
+                    className="bg-surface"
                     value={type}
-                    onChange={(e) => setType(e.target.value)}
-                  >
-                    <option value="Functional">Functional</option>
-                    <option value="Performance">Performance</option>
-                    <option value="Security">Security</option>
-                    <option value="Usability">Usability</option>
-                  </select>
+                    onChange={(value) => setType(value)}
+                    options={[
+                      { value: 'Functional', label: 'Functional' },
+                      { value: 'Performance', label: 'Performance' },
+                      { value: 'Security', label: 'Security' },
+                      { value: 'Usability', label: 'Usability' }
+                    ]}
+                  />
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {testCase ? 'Save Changes' : 'Create Test Case'}
-            </Button>
+            
+            {renderTestStepFields()}
           </div>
         </form>
       </div>

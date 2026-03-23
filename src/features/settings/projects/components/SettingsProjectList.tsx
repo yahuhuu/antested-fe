@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '@/features/projects/store/useProjectStore';
 import { Button } from '@/components/ui/Button';
@@ -12,10 +12,14 @@ import { Project } from '@/features/projects/store/useProjectStore';
 
 export function SettingsProjectList() {
   const navigate = useNavigate();
-  const { projects, deleteProject } = useProjectStore();
+  const { projects, fetchProjects, deleteProject } = useProjectStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

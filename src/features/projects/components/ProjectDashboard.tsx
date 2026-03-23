@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProjectStore } from '@/features/projects/store/useProjectStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -38,8 +39,16 @@ const mockActivities = [
 
 export function ProjectDashboard() {
   const { projectId } = useParams();
-  const { projects } = useProjectStore();
+  const { projects, fetchProjects, isLoading } = useProjectStore();
   const project = projects.find(p => p.id === projectId);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  if (isLoading) {
+    return <div className="p-6 text-text-muted">Loading project...</div>;
+  }
 
   if (!project) {
     return <div className="p-6 text-text-muted">Project not found.</div>;

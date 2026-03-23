@@ -11,7 +11,6 @@ import { Directory } from '@/features/projects/store/useDirectoryStore';
 import generatedData from './generated_data.json';
 
 const initialProjects: Project[] = generatedData.projects;
-const initialTestCases: TestCase[] = generatedData.testCases as TestCase[];
 const initialDirectories: Directory[] = generatedData.directories;
 
 const initialCaseFields: CaseField[] = [
@@ -208,6 +207,40 @@ const initialTestCaseTemplates: TestCaseTemplate[] = [
   },
 ];
 
+const initialTestCases: TestCase[] = (generatedData.testCases as TestCase[]).map(tc => {
+  const project = initialProjects.find(p => p.id === tc.projectId);
+  const templateId = project?.test_case_templates?.id;
+  const template = initialTestCaseTemplates.find(t => t.id === templateId);
+  
+  const customFields: Record<string, any> = {};
+  if (template) {
+    template.fields.forEach(f => {
+      if (f.id.startsWith('cf')) {
+        const fieldDef = initialCaseFields.find(cf => cf.id === f.id);
+        if (fieldDef) {
+          if (fieldDef.type === 'Dropdown') {
+            customFields[f.id] = fieldDef.options?.[0] || '';
+          } else if (fieldDef.type === 'Text') {
+            customFields[f.id] = 'Sample text for ' + fieldDef.name;
+          } else if (fieldDef.type === 'User') {
+            customFields[f.id] = 'usr-1';
+          } else if (fieldDef.type === 'Group') {
+            customFields[f.id] = 'grp-1';
+          } else if (fieldDef.type === 'Checkbox') {
+            customFields[f.id] = true;
+          }
+        }
+      }
+    });
+  }
+
+  return {
+    ...tc,
+    customFields,
+    testStepTemplateId: template?.testStepTemplateId || undefined
+  };
+});
+
 const defaultPermissions: RolePermissions = {
   projects: { create: false, read: true, update: false, delete: false },
   testPlans: { create: false, read: true, update: false, delete: false },
@@ -301,7 +334,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Helper to get data from localStorage or initialize it
 const getStoredData = <T>(key: string, initialData: T): T => {
-  const versionedKey = `${key}_v2`;
+  const versionedKey = `${key}_v3`;
   const stored = localStorage.getItem(versionedKey);
   if (stored) {
     return JSON.parse(stored);
@@ -312,7 +345,7 @@ const getStoredData = <T>(key: string, initialData: T): T => {
 
 // Helper to set data to localStorage
 const setStoredData = <T>(key: string, data: T): void => {
-  const versionedKey = `${key}_v2`;
+  const versionedKey = `${key}_v3`;
   localStorage.setItem(versionedKey, JSON.stringify(data));
 };
 
@@ -611,12 +644,12 @@ export const mockApi = {
   // Test Cases
   getTestCases: async (projectId: string): Promise<TestCase[]> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases', initialTestCases);
+    const cases = getStoredData('mock_testCases_v4', initialTestCases);
     return cases.filter(c => c.projectId === projectId);
   },
   addTestCase: async (testCase: Omit<TestCase, 'id'>): Promise<TestCase> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases', initialTestCases);
+    const cases = getStoredData('mock_testCases_v4', initialTestCases);
     const projects = getStoredData('mock_projects', []);
     const project = projects.find(p => p.id === testCase.projectId);
     const key = project?.key || 'TC';
@@ -630,23 +663,23 @@ export const mockApi = {
     });
     
     const newCase: TestCase = { ...testCase, id: `${key}-${maxNum + 1}` };
-    setStoredData('mock_testCases', [...cases, newCase]);
+    setStoredData('mock_testCases_v4', [...cases, newCase]);
     return newCase;
   },
   updateTestCase: async (id: string, testCase: Partial<TestCase>): Promise<TestCase> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases', initialTestCases);
+    const cases = getStoredData('mock_testCases_v4', initialTestCases);
     const index = cases.findIndex(c => c.id === id);
     if (index === -1) throw new Error('Test Case not found');
     const updatedCase = { ...cases[index], ...testCase };
     cases[index] = updatedCase;
-    setStoredData('mock_testCases', cases);
+    setStoredData('mock_testCases_v4', cases);
     return updatedCase;
   },
   deleteTestCase: async (id: string): Promise<void> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases', initialTestCases);
-    setStoredData('mock_testCases', cases.filter(c => c.id !== id));
+    const cases = getStoredData('mock_testCases_v4', initialTestCases);
+    setStoredData('mock_testCases_v4', cases.filter(c => c.id !== id));
   },
 
   // Defects

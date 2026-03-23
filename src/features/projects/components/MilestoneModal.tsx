@@ -129,7 +129,7 @@ export function MilestoneModal({ isOpen, onClose, milestone, projectId }: Milest
               <Select
                 id="status"
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Open' | 'Completed' })}
+                onChange={(value) => setFormData({ ...formData, status: value as 'Open' | 'Completed' })}
                 options={[
                   { value: 'Open', label: 'Open' },
                   { value: 'Completed', label: 'Completed' },

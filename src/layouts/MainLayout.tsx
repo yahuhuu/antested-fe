@@ -3,11 +3,20 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '@/utils/cn';
+import { useProjectStore } from '@/features/projects/store/useProjectStore';
+import { useCustomizationStore } from '@/features/settings/customizations/store/useCustomizationStore';
 
 export function MainLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const { fetchProjects } = useProjectStore();
+  const { fetchCustomizations } = useCustomizationStore();
+
+  useEffect(() => {
+    fetchProjects();
+    fetchCustomizations();
+  }, [fetchProjects, fetchCustomizations]);
 
   useEffect(() => {
     setIsMobileOpen(false);

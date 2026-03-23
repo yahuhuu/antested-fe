@@ -27,7 +27,7 @@ interface DirNode {
 
 export function ProjectDetail() {
   const { projectId } = useParams();
-  const { projects } = useProjectStore();
+  const { projects, fetchProjects, isLoading: isProjectsLoading } = useProjectStore();
   const { testCases, fetchTestCases, deleteTestCase, isLoading } = useTestCaseStore();
   const { directories, fetchDirectories, addDirectory, updateDirectory, deleteDirectory } = useDirectoryStore();
   
@@ -64,10 +64,11 @@ export function ProjectDetail() {
 
   useEffect(() => {
     if (projectId) {
+      fetchProjects();
       fetchTestCases(projectId);
       fetchDirectories(projectId);
     }
-  }, [projectId, fetchTestCases, fetchDirectories]);
+  }, [projectId, fetchProjects, fetchTestCases, fetchDirectories]);
 
   const tree = useMemo(() => {
     const root: DirNode = { id: 'root', name: 'root', path: '', count: 0, children: {} };
@@ -311,6 +312,10 @@ export function ProjectDetail() {
       </div>
     );
   };
+
+  if (isProjectsLoading) {
+    return <div className="p-6 text-text-muted">Loading project...</div>;
+  }
 
   if (!project) {
     return <div className="p-6 text-text-muted">Project not found.</div>;
