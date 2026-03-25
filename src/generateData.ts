@@ -63,7 +63,7 @@ projectsData.forEach(p => {
       type: 'Functional',
       priority: ['Critical', 'High', 'Medium', 'Low'][Math.floor(Math.random() * 4)],
       status: 'Untested',
-      reviewStatus: status === 'draft' ? 'Draft' : status === 'under_review' ? 'In Review' : status === 'rejected' ? 'Need Update' : 'Approved',
+      reviewStatus: status === 'draft' ? 'Draft' : status === 'under_review' ? 'In Review' : status === 'rejected' ? 'Needs Update' : 'Approved',
       assignee: prjUsers[Math.floor(Math.random() * prjUsers.length)],
       directory: dirs[Math.floor((i-1)/10)]
     });

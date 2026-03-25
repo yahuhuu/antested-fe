@@ -207,7 +207,7 @@ const initialTestCaseTemplates: TestCaseTemplate[] = [
   },
 ];
 
-const initialTestCases: TestCase[] = (generatedData.testCases as TestCase[]).map(tc => {
+const initialTestCases: TestCase[] = (generatedData.testCases as TestCase[]).map((tc, index) => {
   const project = initialProjects.find(p => p.id === tc.projectId);
   const templateId = project?.test_case_templates?.id;
   const template = initialTestCaseTemplates.find(t => t.id === templateId);
@@ -234,10 +234,32 @@ const initialTestCases: TestCase[] = (generatedData.testCases as TestCase[]).map
     });
   }
 
+  const testStepTemplateId = template?.testStepTemplateId || '2'; // Default to '2' (Multiple Steps) if not set
+  const tsTemplate = initialTestStepTemplates.find(t => t.id === testStepTemplateId);
+  const testStepsData: Record<string, any> = {};
+
+  if (tsTemplate) {
+    tsTemplate.fields.forEach(f => {
+      if (f.type === 'Repeater' && f.subFields) {
+        testStepsData[f.id] = [
+          { id: '1', [f.subFields[0].id]: 'Navigate to the login page', [f.subFields[1].id]: 'Login page is displayed' },
+          { id: '2', [f.subFields[0].id]: 'Enter valid credentials and submit', [f.subFields[1].id]: 'User is logged in successfully' }
+        ];
+      } else {
+        testStepsData[f.id] = `Sample data for ${f.name}`;
+      }
+    });
+  }
+
+  // Set reviewStatus so that some are 'Approved' (All Test Cases) and some are 'Draft' (Drafts)
+  const reviewStatus = index % 2 === 0 ? 'Approved' : 'Draft';
+
   return {
     ...tc,
+    reviewStatus,
     customFields,
-    testStepTemplateId: template?.testStepTemplateId || undefined
+    testStepTemplateId,
+    testStepsData
   };
 });
 
@@ -644,12 +666,12 @@ export const mockApi = {
   // Test Cases
   getTestCases: async (projectId: string): Promise<TestCase[]> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases_v4', initialTestCases);
+    const cases = getStoredData('mock_testCases_v5', initialTestCases);
     return cases.filter(c => c.projectId === projectId);
   },
   addTestCase: async (testCase: Omit<TestCase, 'id'>): Promise<TestCase> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases_v4', initialTestCases);
+    const cases = getStoredData('mock_testCases_v5', initialTestCases);
     const projects = getStoredData('mock_projects', []);
     const project = projects.find(p => p.id === testCase.projectId);
     const key = project?.key || 'TC';
@@ -663,23 +685,23 @@ export const mockApi = {
     });
     
     const newCase: TestCase = { ...testCase, id: `${key}-${maxNum + 1}` };
-    setStoredData('mock_testCases_v4', [...cases, newCase]);
+    setStoredData('mock_testCases_v5', [...cases, newCase]);
     return newCase;
   },
   updateTestCase: async (id: string, testCase: Partial<TestCase>): Promise<TestCase> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases_v4', initialTestCases);
+    const cases = getStoredData('mock_testCases_v5', initialTestCases);
     const index = cases.findIndex(c => c.id === id);
     if (index === -1) throw new Error('Test Case not found');
     const updatedCase = { ...cases[index], ...testCase };
     cases[index] = updatedCase;
-    setStoredData('mock_testCases_v4', cases);
+    setStoredData('mock_testCases_v5', cases);
     return updatedCase;
   },
   deleteTestCase: async (id: string): Promise<void> => {
     await delay(500);
-    const cases = getStoredData('mock_testCases_v4', initialTestCases);
-    setStoredData('mock_testCases_v4', cases.filter(c => c.id !== id));
+    const cases = getStoredData('mock_testCases_v5', initialTestCases);
+    setStoredData('mock_testCases_v5', cases.filter(c => c.id !== id));
   },
 
   // Defects

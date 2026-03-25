@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Modal } from '@/components/ui/Modal';
 import { 
   ChevronRight, ChevronLeft, Folder, FileText, Plus, Search, Filter, Play, Edit2, Trash2,
-  Sparkles, MoreHorizontal, ChevronDown, FileEdit, Trash, Eye
+  Sparkles, MoreHorizontal, ChevronDown, FileEdit, Trash, Eye, RefreshCw, Paperclip
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useProjectStore } from '../store/useProjectStore';
@@ -15,6 +15,7 @@ import { useTestCaseStore, TestCase } from '../store/useTestCaseStore';
 import { useDirectoryStore, Directory } from '../store/useDirectoryStore';
 import { TestCaseModal } from './TestCaseModal';
 import { TestCaseSidePanel } from './TestCaseSidePanel';
+import { ChangeStatusForm } from './ChangeStatusForm';
 
 interface DirNode {
   id: string;
@@ -28,7 +29,7 @@ interface DirNode {
 export function ProjectDetail() {
   const { projectId } = useParams();
   const { projects, fetchProjects, isLoading: isProjectsLoading } = useProjectStore();
-  const { testCases, fetchTestCases, deleteTestCase, isLoading } = useTestCaseStore();
+  const { testCases, fetchTestCases, deleteTestCase, updateTestCase, isLoading } = useTestCaseStore();
   const { directories, fetchDirectories, addDirectory, updateDirectory, deleteDirectory } = useDirectoryStore();
   
   const project = projects.find(p => p.id === projectId);
@@ -48,18 +49,27 @@ export function ProjectDetail() {
   const [viewingDir, setViewingDir] = useState<Directory | undefined>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeDirMenu, setActiveDirMenu] = useState<string | null>(null);
+  const [dirMenuPosition, setDirMenuPosition] = useState<{ top?: number, bottom?: number, left?: number, right?: number } | null>(null);
   const [selectedTestCases, setSelectedTestCases] = useState<string[]>([]);
   const [activeTestCaseMenu, setActiveTestCaseMenu] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top?: number, bottom?: number, right?: number } | null>(null);
   const [viewingTestCase, setViewingTestCase] = useState<TestCase | undefined>();
+  const [statusModalTestCase, setStatusModalTestCase] = useState<TestCase | undefined>();
   const [deletingTestCase, setDeletingTestCase] = useState<string | 'selected' | null>(null);
 
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleInteraction = () => {
       setActiveDirMenu(null);
+      setDirMenuPosition(null);
       setActiveTestCaseMenu(null);
+      setMenuPosition(null);
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener('click', handleInteraction);
+    window.addEventListener('scroll', handleInteraction, true);
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      window.removeEventListener('scroll', handleInteraction, true);
+    };
   }, []);
 
   useEffect(() => {
@@ -114,11 +124,11 @@ export function ProjectDetail() {
         return [parentId, ...children.flatMap(getDescendantIds)];
       };
       const validDirIds = getDescendantIds(activeSuite);
-      cases = testCases.filter(tc => validDirIds.includes(tc.directory || 'Uncategorized') && tc.reviewStatus !== 'Draft');
+      cases = testCases.filter(tc => validDirIds.includes(tc.directory || 'Uncategorized') && (!project?.enable_test_case_approval || tc.reviewStatus === 'Approved'));
     } else if (activeSuite === 'All Test Cases') {
-      cases = testCases.filter(tc => tc.reviewStatus !== 'Draft');
+      cases = testCases.filter(tc => !project?.enable_test_case_approval || tc.reviewStatus === 'Approved');
     } else if (activeSuite === 'Drafts') {
-      cases = testCases.filter(tc => tc.reviewStatus === 'Draft');
+      cases = testCases.filter(tc => project?.enable_test_case_approval && tc.reviewStatus !== 'Approved');
     } else if (activeSuite === 'Trash') {
       cases = [];
     }
@@ -279,14 +289,39 @@ export function ProjectDetail() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setActiveDirMenu(isMenuOpen ? null : child.id);
+                          if (isMenuOpen) {
+                            setActiveDirMenu(null);
+                            setDirMenuPosition(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const menuHeight = 160; // Approximate height of the menu
+                            
+                            if (spaceBelow < menuHeight) {
+                              // Open upwards
+                              setDirMenuPosition({ 
+                                bottom: window.innerHeight - rect.top + 4, 
+                                left: rect.left 
+                              });
+                            } else {
+                              // Open downwards
+                              setDirMenuPosition({ 
+                                top: rect.bottom + 4, 
+                                left: rect.left 
+                              });
+                            }
+                            setActiveDirMenu(child.id);
+                          }
                         }}
                         className="p-0.5 hover:bg-surface-hover rounded text-text-muted"
                       >
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                       {isMenuOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-border rounded-md shadow-lg z-50 py-1">
+                        <div 
+                          className="fixed w-40 bg-surface border border-border rounded-md shadow-lg z-50 py-1"
+                          style={dirMenuPosition || {}}
+                        >
                           <button onClick={(e) => { e.stopPropagation(); handleViewDir(directories.find(d => d.id === child.id)!); setActiveDirMenu(null); }} className="w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface-hover flex items-center gap-2">
                             <Eye className="h-3.5 w-3.5" /> View
                           </button>
@@ -374,7 +409,7 @@ export function ProjectDetail() {
                     <span>Drafts</span>
                   </div>
                   <Badge variant="secondary" className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[10px] bg-surface-hover text-text-muted border-none">
-                    {testCases.filter(tc => tc.reviewStatus === 'Draft').length}
+                    {testCases.filter(tc => tc.reviewStatus !== 'Approved').length}
                   </Badge>
                 </button>
               )}
@@ -439,11 +474,13 @@ export function ProjectDetail() {
               <div className="flex items-center gap-2">
                 {project.enable_test_case_approval && (
                   <select className="h-9 rounded-md border border-border bg-surface-hover px-3 text-sm text-text-muted focus:outline-none focus:ring-1 focus:ring-primary">
-                    <option>Status: All</option>
-                    <option>Approved</option>
-                    <option>Draft</option>
+                    <option>Result: All</option>
+                    <option>Ready for Review</option>
                     <option>In Review</option>
-                    <option>Need Update</option>
+                    <option>Needs Update</option>
+                    <option>Approved</option>
+                    <option>Rejected</option>
+                    <option>Draft</option>
                   </select>
                 )}
                 <select className="h-9 rounded-md border border-border bg-surface-hover px-3 text-sm text-text-muted focus:outline-none focus:ring-1 focus:ring-primary">
@@ -483,7 +520,7 @@ export function ProjectDetail() {
                         <th className="px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Directory</th>
                         <th className="px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Priority</th>
                         {project.enable_test_case_approval && (
-                          <th className="px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Result</th>
                         )}
                         <th className="px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Assignee</th>
                         <th className="px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider text-right">Actions</th>
@@ -524,7 +561,9 @@ export function ProjectDetail() {
                                   tc.reviewStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-500' : 
                                   tc.reviewStatus === 'Draft' ? 'bg-slate-500/10 text-slate-500' : 
                                   tc.reviewStatus === 'In Review' ? 'bg-teal-500/10 text-teal-500' : 
-                                  tc.reviewStatus === 'Need Update' ? 'bg-orange-500/10 text-orange-500' :
+                                  tc.reviewStatus === 'Ready for Review' ? 'bg-blue-500/10 text-blue-500' :
+                                  tc.reviewStatus === 'Needs Update' ? 'bg-orange-500/10 text-orange-500' :
+                                  tc.reviewStatus === 'Rejected' ? 'bg-red-500/10 text-red-500' :
                                   'bg-slate-500/10 text-slate-500'
                                 )}
                               >
@@ -541,16 +580,46 @@ export function ProjectDetail() {
                                 className="h-8 w-8 text-text-muted hover:text-text" 
                                 onClick={(e) => { 
                                   e.stopPropagation(); 
-                                  setActiveTestCaseMenu(activeTestCaseMenu === tc.id ? null : tc.id); 
+                                  if (activeTestCaseMenu === tc.id) {
+                                    setActiveTestCaseMenu(null);
+                                    setMenuPosition(null);
+                                  } else {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    const menuHeight = 160; // Approximate height of the menu
+                                    
+                                    if (spaceBelow < menuHeight) {
+                                      // Open upwards
+                                      setMenuPosition({ 
+                                        bottom: window.innerHeight - rect.top + 4, 
+                                        right: window.innerWidth - rect.right 
+                                      });
+                                    } else {
+                                      // Open downwards
+                                      setMenuPosition({ 
+                                        top: rect.bottom + 4, 
+                                        right: window.innerWidth - rect.right 
+                                      });
+                                    }
+                                    setActiveTestCaseMenu(tc.id);
+                                  }
                                 }}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                               {activeTestCaseMenu === tc.id && (
-                                <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-border rounded-md shadow-lg z-50 py-1">
+                                <div 
+                                  className="fixed w-40 bg-surface border border-border rounded-md shadow-lg z-50 py-1"
+                                  style={menuPosition || {}}
+                                >
                                   <button onClick={(e) => { e.stopPropagation(); setViewingTestCase(tc); setActiveTestCaseMenu(null); }} className="w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface-hover flex items-center gap-2">
                                     <Eye className="h-3.5 w-3.5" /> View
                                   </button>
+                                  {activeSuite === 'Drafts' && (
+                                    <button onClick={(e) => { e.stopPropagation(); setStatusModalTestCase(tc); setActiveTestCaseMenu(null); }} className="w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface-hover flex items-center gap-2">
+                                      <RefreshCw className="h-3.5 w-3.5" /> Change Status
+                                    </button>
+                                  )}
                                   <button onClick={(e) => { e.stopPropagation(); handleEdit(tc); setActiveTestCaseMenu(null); }} className="w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface-hover flex items-center gap-2">
                                     <Edit2 className="h-3.5 w-3.5" /> Edit
                                   </button>
@@ -676,6 +745,22 @@ export function ProjectDetail() {
         isOpen={!!viewingTestCase}
         onClose={() => setViewingTestCase(undefined)}
         testCase={viewingTestCase || null}
+        onNext={() => {
+          if (!viewingTestCase) return;
+          const index = filteredCases.findIndex(tc => tc.id === viewingTestCase.id);
+          if (index >= 0 && index < filteredCases.length - 1) {
+            setViewingTestCase(filteredCases[index + 1]);
+          }
+        }}
+        onPrevious={() => {
+          if (!viewingTestCase) return;
+          const index = filteredCases.findIndex(tc => tc.id === viewingTestCase.id);
+          if (index > 0) {
+            setViewingTestCase(filteredCases[index - 1]);
+          }
+        }}
+        hasNext={viewingTestCase ? filteredCases.findIndex(tc => tc.id === viewingTestCase.id) >= 0 && filteredCases.findIndex(tc => tc.id === viewingTestCase.id) < filteredCases.length - 1 : false}
+        hasPrevious={viewingTestCase ? filteredCases.findIndex(tc => tc.id === viewingTestCase.id) > 0 : false}
       />
 
       <Modal
@@ -701,6 +786,39 @@ export function ProjectDetail() {
             This action cannot be undone.
           </p>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!statusModalTestCase}
+        onClose={() => setStatusModalTestCase(undefined)}
+        title="RESULT"
+        className="max-w-2xl"
+      >
+        {statusModalTestCase && (
+          <ChangeStatusForm
+            initialStatus={statusModalTestCase.reviewStatus || 'Needs Update'}
+            projectUsers={project?.access_management?.users?.data || []}
+            onSubmit={async (status, assignee, comment) => {
+              if (statusModalTestCase) {
+                await updateTestCase(statusModalTestCase.id, {
+                  reviewStatus: status as any,
+                  assignee: assignee || undefined,
+                });
+                // Note: comment and attachment are not currently saved in the mock store,
+                // but we simulate the update.
+              }
+            }}
+            onNext={() => {
+              const index = filteredCases.findIndex(tc => tc.id === statusModalTestCase.id);
+              if (index >= 0 && index < filteredCases.length - 1) {
+                setStatusModalTestCase(filteredCases[index + 1]);
+              } else {
+                setStatusModalTestCase(undefined);
+              }
+            }}
+            hasNext={filteredCases.findIndex(tc => tc.id === statusModalTestCase.id) >= 0 && filteredCases.findIndex(tc => tc.id === statusModalTestCase.id) < filteredCases.length - 1}
+          />
+        )}
       </Modal>
     </div>
   );

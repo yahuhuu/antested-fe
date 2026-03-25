@@ -38,6 +38,9 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
   const [testStepTemplateId, setTestStepTemplateId] = useState<string>('');
   const [testStepsData, setTestStepsData] = useState<Record<string, any>>({});
 
+  const [isDirty, setIsDirty] = useState(false);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
+
   const projectDirs = useMemo(() => directories.filter(d => d.projectId === projectId), [directories, projectId]);
 
   // Build a flat list of directories with indentation for the select dropdown
@@ -92,10 +95,36 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       setTestStepTemplateId(template?.testStepTemplateId || '');
       setTestStepsData({});
     }
+    setIsDirty(false);
+    setShowConfirmClose(false);
   }, [testCase, isOpen, template]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFieldChange = (setter: any) => (value: any) => {
+    setter(value);
+    setIsDirty(true);
+  };
+
+  const handleClose = () => {
+    if (isDirty && project?.enable_test_case_approval) {
+      setShowConfirmClose(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleConfirmDiscard = () => {
+    setShowConfirmClose(false);
+    onClose();
+  };
+
+  const handleSubmit = async (e?: React.FormEvent, isDraft = false) => {
+    if (e) e.preventDefault();
+    
+    let reviewStatus: any = undefined;
+    if (project?.enable_test_case_approval) {
+      reviewStatus = isDraft ? 'Draft' : 'Ready for Review';
+    }
+
     const data = {
       projectId,
       title,
@@ -103,6 +132,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
       priority: customFields['cf5'] || customFields['cf6'] || priority,
       type: customFields['cf1'] || customFields['cf2'] || type,
       status: testCase?.status || 'Untested',
+      reviewStatus: reviewStatus || testCase?.reviewStatus,
       customFields,
       testStepTemplateId,
       testStepsData,
@@ -113,6 +143,8 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
     } else {
       await addTestCase(data);
     }
+    setIsDirty(false);
+    setShowConfirmClose(false);
     onClose();
   };
 
@@ -139,8 +171,8 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
               className="bg-background"
               value={currentTemplateId}
               onChange={(value) => {
-                setTestStepTemplateId(value);
-                setTestStepsData({}); // Reset data when template changes
+                handleFieldChange(setTestStepTemplateId)(value);
+                handleFieldChange(setTestStepsData)({}); // Reset data when template changes
               }}
               options={testStepTemplates.map(t => ({ value: t.id, label: t.name }))}
               placeholder="Select template..."
@@ -160,7 +192,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                   
                   const addRow = () => {
                     const newRow = field.subFields!.reduce((acc, sf) => ({ ...acc, [sf.id]: '' }), {});
-                    setTestStepsData({
+                    handleFieldChange(setTestStepsData)({
                       ...testStepsData,
                       [field.id]: [...rows, newRow]
                     });
@@ -169,7 +201,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                   const updateRow = (index: number, subFieldId: string, value: string) => {
                     const newRows = [...rows];
                     newRows[index] = { ...newRows[index], [subFieldId]: value };
-                    setTestStepsData({
+                    handleFieldChange(setTestStepsData)({
                       ...testStepsData,
                       [field.id]: newRows
                     });
@@ -177,7 +209,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
 
                   const removeRow = (index: number) => {
                     const newRows = rows.filter((_: any, i: number) => i !== index);
-                    setTestStepsData({
+                    handleFieldChange(setTestStepsData)({
                       ...testStepsData,
                       [field.id]: newRows
                     });
@@ -252,7 +284,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                         className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[80px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
                         placeholder={`Enter ${field.name}`} 
                         value={testStepsData[field.id] || ''}
-                        onChange={(e) => setTestStepsData({ ...testStepsData, [field.id]: e.target.value })}
+                        onChange={(e) => handleFieldChange(setTestStepsData)({ ...testStepsData, [field.id]: e.target.value })}
                       />
                     ) : field.type === 'Checkbox' ? (
                       <div className="flex items-center gap-2 h-9">
@@ -260,7 +292,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                           type="checkbox" 
                           className="rounded border-border text-primary bg-background" 
                           checked={!!testStepsData[field.id]}
-                          onChange={(e) => setTestStepsData({ ...testStepsData, [field.id]: e.target.checked })}
+                          onChange={(e) => handleFieldChange(setTestStepsData)({ ...testStepsData, [field.id]: e.target.checked })}
                         />
                         <span className="text-sm text-text">Check to enable</span>
                       </div>
@@ -268,7 +300,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                       <Select
                         className="bg-background"
                         value={testStepsData[field.id] || ''}
-                        onChange={(value) => setTestStepsData({ ...testStepsData, [field.id]: value })}
+                        onChange={(value) => handleFieldChange(setTestStepsData)({ ...testStepsData, [field.id]: value })}
                         options={[]} // Assuming options are not defined in TestStepField, but if they were, we'd map them here
                         placeholder="Select option..."
                       />
@@ -277,7 +309,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                         placeholder={`Enter ${field.name}`} 
                         className="bg-background" 
                         value={testStepsData[field.id] || ''}
-                        onChange={(e) => setTestStepsData({ ...testStepsData, [field.id]: e.target.value })}
+                        onChange={(e) => handleFieldChange(setTestStepsData)({ ...testStepsData, [field.id]: e.target.value })}
                       />
                     )}
                   </div>
@@ -291,22 +323,28 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={testCase ? 'Edit Test Case' : 'Create Test Case'}
-      className="max-w-4xl"
-      footer={
-        <div className="text-text flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" form="test-case-form">
-            {testCase ? 'Save Changes' : 'Create Test Case'}
-          </Button>
-        </div>
-      }
-    >
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title={testCase ? 'Edit Test Case' : 'Create Test Case'}
+        className="max-w-4xl"
+        footer={
+          <div className="text-text flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            {project?.enable_test_case_approval && (
+              <Button type="button" variant="outline" onClick={() => handleSubmit(undefined, true)}>
+                Simpan sebagai Draft
+              </Button>
+            )}
+            <Button type="submit" form="test-case-form">
+              {testCase ? 'Save Changes' : 'Create Test Case'}
+            </Button>
+          </div>
+        }
+      >
       <div className="space-y-6">
         <form id="test-case-form" onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
@@ -324,7 +362,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                         <Input
                           required
                           value={title}
-                          onChange={(e) => setTitle(e.target.value)}
+                          onChange={(e) => handleFieldChange(setTitle)(e.target.value)}
                           placeholder="Enter test case title"
                           className="bg-background"
                         />
@@ -339,7 +377,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                         <Select
                           className="bg-background"
                           value={directory}
-                          onChange={(value) => setDirectory(value)}
+                          onChange={(value) => handleFieldChange(setDirectory)(value)}
                           options={directoryOptions.map(opt => ({
                             value: opt.id,
                             label: `${'\u00A0'.repeat(opt.level * 4)}${opt.name}`
@@ -363,7 +401,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                           className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text shadow-sm min-h-[80px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                           required={fieldConfig.required}
                           value={customFields[fieldId] || ''}
-                          onChange={(e) => setCustomFields({ ...customFields, [fieldId]: e.target.value })}
+                          onChange={(e) => handleFieldChange(setCustomFields)({ ...customFields, [fieldId]: e.target.value })}
                           placeholder={`Enter ${fieldConfig.name}`}
                         />
                       ) : fieldConfig.type === 'Checkbox' ? (
@@ -372,7 +410,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                             type="checkbox"
                             className="rounded border-border text-primary bg-background"
                             checked={!!customFields[fieldId]}
-                            onChange={(e) => setCustomFields({ ...customFields, [fieldId]: e.target.checked })}
+                            onChange={(e) => handleFieldChange(setCustomFields)({ ...customFields, [fieldId]: e.target.checked })}
                           />
                           <span className="text-sm text-text">Check to enable</span>
                         </div>
@@ -381,7 +419,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                           className="bg-background"
                           required={fieldConfig.required}
                           value={customFields[fieldId] || ''}
-                          onChange={(value) => setCustomFields({ ...customFields, [fieldId]: value })}
+                          onChange={(value) => handleFieldChange(setCustomFields)({ ...customFields, [fieldId]: value })}
                           options={fieldConfig.options?.map(opt => ({ value: opt, label: opt })) || []}
                           placeholder="Select option..."
                         />
@@ -390,7 +428,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                           className="bg-background"
                           required={fieldConfig.required}
                           value={customFields[fieldId] || ''}
-                          onChange={(value) => setCustomFields({ ...customFields, [fieldId]: value })}
+                          onChange={(value) => handleFieldChange(setCustomFields)({ ...customFields, [fieldId]: value })}
                           options={users.map(user => ({ value: user.id, label: user.name }))}
                           placeholder="Select user..."
                         />
@@ -399,7 +437,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                           className="bg-background"
                           required={fieldConfig.required}
                           value={customFields[fieldId] || ''}
-                          onChange={(value) => setCustomFields({ ...customFields, [fieldId]: value })}
+                          onChange={(value) => handleFieldChange(setCustomFields)({ ...customFields, [fieldId]: value })}
                           options={groups.map(group => ({ value: group.id, label: group.name }))}
                           placeholder="Select group..."
                         />
@@ -407,7 +445,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                         <Input
                           required={fieldConfig.required}
                           value={customFields[fieldId] || ''}
-                          onChange={(e) => setCustomFields({ ...customFields, [fieldId]: e.target.value })}
+                          onChange={(e) => handleFieldChange(setCustomFields)({ ...customFields, [fieldId]: e.target.value })}
                           placeholder={`Enter ${fieldConfig.name}`}
                           className="bg-background"
                         />
@@ -423,7 +461,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                   <Input
                     required
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => handleFieldChange(setTitle)(e.target.value)}
                     placeholder="Enter test case title"
                   />
                 </div>
@@ -433,7 +471,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                   <Select
                     className="bg-surface"
                     value={directory}
-                    onChange={(value) => setDirectory(value)}
+                    onChange={(value) => handleFieldChange(setDirectory)(value)}
                     options={directoryOptions.map(opt => ({
                       value: opt.id,
                       label: `${'\u00A0'.repeat(opt.level * 4)}${opt.name}`
@@ -447,7 +485,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                   <Select
                     className="bg-surface"
                     value={priority}
-                    onChange={(value) => setPriority(value)}
+                    onChange={(value) => handleFieldChange(setPriority)(value)}
                     options={[
                       { value: 'Critical', label: 'Critical' },
                       { value: 'High', label: 'High' },
@@ -462,7 +500,7 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
                   <Select
                     className="bg-surface"
                     value={type}
-                    onChange={(value) => setType(value)}
+                    onChange={(value) => handleFieldChange(setType)(value)}
                     options={[
                       { value: 'Functional', label: 'Functional' },
                       { value: 'Performance', label: 'Performance' },
@@ -479,5 +517,30 @@ export function TestCaseModal({ isOpen, onClose, projectId, testCase }: TestCase
         </form>
       </div>
     </Modal>
+
+    <Modal
+      isOpen={showConfirmClose}
+      onClose={() => setShowConfirmClose(false)}
+      title="Perubahan Belum Disimpan"
+      className="max-w-md"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setShowConfirmClose(false)}>
+            Batal
+          </Button>
+          <Button variant="destructive" onClick={handleConfirmDiscard}>
+            Buang Perubahan
+          </Button>
+          <Button onClick={() => handleSubmit(undefined, true)}>
+            Simpan sebagai Draft
+          </Button>
+        </div>
+      }
+    >
+      <p className="text-text">
+        Anda memiliki perubahan yang belum disimpan. Apakah Anda ingin membuang perubahan ini atau menyimpannya sebagai draft?
+      </p>
+    </Modal>
+    </>
   );
 }

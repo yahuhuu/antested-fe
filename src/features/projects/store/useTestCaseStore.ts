@@ -8,7 +8,7 @@ export interface TestCase {
   type: string;
   priority: string;
   status: 'Passed' | 'Failed' | 'Untested' | 'Blocked' | 'Retest';
-  reviewStatus?: 'Approved' | 'Draft' | 'In Review' | 'Need Update';
+  reviewStatus?: 'Draft' | 'Ready for Review' | 'In Review' | 'Needs Update' | 'Approved' | 'Rejected';
   assignee?: string;
   directory: string; // Suite or folder
   // Dynamic fields will be stored here
